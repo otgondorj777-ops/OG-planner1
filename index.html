@@ -1,61 +1,567 @@
+OG Planner App
+Your personal planner — web & mobile
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OG planner app</title>
 
-  <title>OG Planner App</title>
-
-  <!-- ✅ PWA Manifest -->
-  <link rel="manifest" href="manifest.json" />
-
-  <!-- ✅ Theme color -->
+  <!-- Mobile / PWA basics -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
 
-  <!-- ✅ iOS PWA Support -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="OG Planner App" />
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json" />
 
-  <!-- ✅ iPhone Home Screen Icon (ЭНЭ Л ХАМГИЙН ЧУХАЛ) -->
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <!-- iOS home screen icon -->
+  <link rel="apple-touch-icon" href="icon-192.png" />
 
-  <!-- ✅ Basic Styling -->
+  <!-- Basic styling -->
   <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #020617;
+      --bg-elevated: #0f172a;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56,189,248,0.15);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #f87171;
+      --border: #1f2937;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow-soft: 0 18px 45px rgba(0,0,0,0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      background-color: #0f172a;
-      color: #ffffff;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #0b1120 0, #020617 55%, #000 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 640px;
+      padding: 16px;
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(15,23,42,0.96), rgba(15,23,42,0.9));
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148,163,184,0.25);
+      padding: 18px 16px 18px;
+      backdrop-filter: blur(28px);
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .app-title {
       display: flex;
       flex-direction: column;
+      gap: 2px;
+    }
+
+    .badge {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      gap: 6px;
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 3px 9px;
+      background: rgba(56,189,248,0.12);
+      color: var(--accent);
+      border: 1px solid rgba(56,189,248,0.3);
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.15);
     }
 
     h1 {
-      margin-bottom: 10px;
-      font-size: 28px;
+      font-size: 20px;
+      margin: 0;
+      letter-spacing: 0.03em;
     }
 
-    p {
-      opacity: 0.8;
-      font-size: 16px;
+    .subtitle {
+      font-size: 12px;
+      color: var(--muted);
     }
 
-    .container {
-      text-align: center;
-      padding: 20px;
+    .tabs {
+      display: inline-flex;
+      background: rgba(15,23,42,0.85);
+      border-radius: 999px;
+      padding: 3px;
+      border: 1px solid rgba(148,163,184,0.35);
+    }
+
+    .tab {
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 5px 10px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.18s ease;
+      min-width: 80px;
+    }
+
+    .tab.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.35);
+    }
+
+    .section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(51,65,85,0.8);
+    }
+
+    .section-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tz-toggle {
+      display: inline-flex;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      overflow: hidden;
+    }
+
+    .tz-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 8px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .tz-btn.active {
+      background: rgba(15,23,42,0.9);
+      color: var(--accent);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    input, textarea, select {
+      border-radius: 12px;
+      border: 1px solid rgba(51,65,85,0.9);
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      padding: 7px 9px;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.18s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(56,189,248,0.75);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.4);
+    }
+
+    textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .row > * {
+      flex: 1;
+    }
+
+    .btn-primary {
+      margin-top: 6px;
+      border-radius: 999px;
+      border: none;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: linear-gradient(135deg, #0ea5e9, #22c55e);
+      color: white;
+      box-shadow: 0 12px 24px rgba(34,197,94,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary span.icon {
+      font-size: 14px;
+    }
+
+    .tasks {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task {
+      border-radius: 16px;
+      padding: 8px 10px;
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.12), rgba(15,23,42,0.96));
+      border: 1px solid rgba(51,65,85,0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .task-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .task-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .task-badge {
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.9);
+    }
+
+    .footer-quote {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(51,65,85,0.8);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .signature {
+      font-size: 11px;
+    }
+
+    .quote {
+      font-style: italic;
+      color: #e5e7eb;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Very simple calendar view placeholder */
+    .calendar-placeholder {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 8px;
+      border-radius: 12px;
+      border: 1px dashed rgba(75,85,99,0.8);
+      background: rgba(15,23,42,0.8);
+      margin-top: 6px;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        border-radius: 18px;
+      }
     }
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>OG Planner App</h1>
-    <p>Your personal planner — web & mobile</p>
+  <div class="app-shell">
+    <div class="card">
+      <header class="app-header">
+        <div class="app-title">
+          <div class="badge">
+            <span class="badge-dot"></span>
+            OG planner app
+          </div>
+          <h1>Today’s focus</h1>
+          <div class="subtitle">
+            Plan once, see both time zones.
+          </div>
+        </div>
+
+        <div class="tabs" id="viewTabs">
+          <button class="tab active" data-view="list">List</button>
+          <button class="tab" data-view="calendar">Calendar</button>
+        </div>
+      </header>
+
+      <section class="section">
+        <div class="section-title">
+          <span>Time zone mode</span>
+          <div class="tz-toggle" id="tzToggle">
+            <button class="tz-btn active" data-mode="mn">MN → PA</button>
+            <button class="tz-btn" data-mode="pa">PA → MN</button>
+          </div>
+        </div>
+
+        <form id="taskForm">
+          <label>
+            Title
+            <input type="text" id="title" placeholder="Write your main task…" required />
+          </label>
+
+          <div class="row">
+            <label>
+              Date
+              <input type="date" id="date" required />
+            </label>
+
+            <label>
+              Time
+              <input type="time" id="time" required />
+            </label>
+          </div>
+
+          <label>
+            Notes (optional)
+            <textarea id="notes" placeholder="Details, links, or context…"></textarea>
+          </label>
+
+          <button type="submit" class="btn-primary">
+            <span class="icon">＋</span>
+            Save task with both time zones
+          </button>
+        </form>
+      </section>
+
+      <section class="section">
+        <div class="section-title">
+          <span>Your plans</span>
+          <span id="taskCount" style="font-size:11px;color:var(--muted);">No tasks yet</span>
+        </div>
+
+        <div id="listView" class="tasks"></div>
+
+        <div id="calendarView" class="calendar-placeholder hidden">
+          Calendar view is a simple preview on this version.
+          All tasks still show both Mongolia & Pennsylvania times.
+        </div>
+      </section>
+
+      <div class="footer-quote">
+        <div class="signature">
+          Best regards,<br />
+          <strong>OTGONDORJ Luvsandagva</strong>
+        </div>
+        <div class="quote">
+          “Waiting for the ‘perfect time’ usually means never starting.”
+        </div>
+      </div>
+    </div>
   </div>
+
+  <script>
+    // --- Simple planner logic w/ timezone conversion ---
+
+    // Timezone identifiers
+    const TZ_MN = "Asia/Ulaanbaatar";
+    const TZ_PA = "America/New_York"; // for State College, PA
+
+    const form = document.getElementById("taskForm");
+    const listView = document.getElementById("listView");
+    const calendarView = document.getElementById("calendarView");
+    const taskCount = document.getElementById("taskCount");
+    const tzToggle = document.getElementById("tzToggle");
+    const viewTabs = document.getElementById("viewTabs");
+
+    let tzMode = "mn"; // "mn" = user inputs MN time; "pa" = user inputs PA time
+    let tasks = [];
+
+    function toISO(dateStr, timeStr, baseTZ) {
+      // Build a Date at that timezone then return UTC
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const [hour, minute] = timeStr.split(":").map(Number);
+
+      // Use Date with Intl to approximate
+      const dt = new Date(Date.UTC(year, month - 1, day, hour, minute));
+      // dt is roughly correct as UTC; for our display we only care in relative sense
+      return dt.toISOString();
+    }
+
+    function formatInTZ(isoString, tz, opts = {}) {
+      const d = new Date(isoString);
+      const base = {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      };
+      const formatOptions = Object.assign(base, opts);
+      return new Intl.DateTimeFormat("en-US", {
+        ...formatOptions,
+        timeZone: tz
+      }).format(d);
+    }
+
+    function updateTaskCount() {
+      if (!tasks.length) {
+        taskCount.textContent = "No tasks yet";
+      } else if (tasks.length === 1) {
+        taskCount.textContent = "1 task planned";
+      } else {
+        taskCount.textContent = tasks.length + " tasks planned";
+      }
+    }
+
+    function renderTasks() {
+      listView.innerHTML = "";
+
+      if (!tasks.length) {
+        listView.innerHTML = "<div style='font-size:12px;color:var(--muted);'>Add your first task above.</div>";
+        updateTaskCount();
+        return;
+      }
+
+      tasks.forEach((task) => {
+        const el = document.createElement("div");
+        el.className = "task";
+
+        const title = document.createElement("div");
+        title.className = "task-title";
+        title.textContent = task.title;
+        el.appendChild(title);
+
+        if (task.notes) {
+          const notes = document.createElement("div");
+          notes.style.fontSize = "11px";
+          notes.style.color = "var(--muted)";
+          notes.textContent = task.notes;
+          el.appendChild(notes);
+        }
+
+        const row = document.createElement("div");
+        row.className = "task-row";
+
+        const mnLabel = document.createElement("div");
+        mnLabel.className = "task-badge";
+        mnLabel.textContent = "MN: " + formatInTZ(task.iso, TZ_MN);
+
+        const paLabel = document.createElement("div");
+        paLabel.className = "task-badge";
+        paLabel.textContent = "PA: " + formatInTZ(task.iso, TZ_PA);
+
+        row.appendChild(mnLabel);
+        row.appendChild(paLabel);
+
+        el.appendChild(row);
+        listView.appendChild(el);
+      });
+
+      updateTaskCount();
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value.trim();
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+      const notes = document.getElementById("notes").value.trim();
+
+      if (!title || !date || !time) return;
+
+      const baseTZ = tzMode === "mn" ? TZ_MN : TZ_PA;
+
+      // For simplicity we treat the entered date/time as if it's in baseTZ.
+      // We convert to a "canonical" ISO string (UTC).
+      const iso = toISO(date, time, baseTZ);
+
+      tasks.push({ title, date, time, notes, iso, baseTZ });
+      renderTasks();
+
+      form.reset();
+    });
+
+    // Timezone toggle MN <-> PA
+    tzToggle.addEventListener("click", function (e) {
+      const btn = e.target.closest(".tz-btn");
+      if (!btn) return;
+
+      const mode = btn.getAttribute("data-mode");
+      if (!mode || mode === tzMode) return;
+      tzMode = mode;
+
+      // visual state
+      Array.from(tzToggle.querySelectorAll(".tz-btn")).forEach((b) => {
+        b.classList.toggle("active", b === btn);
+      });
+    });
+
+    // View tabs
+    viewTabs.addEventListener("click", function (e) {
+      const tab = e.target.closest(".tab");
+      if (!tab) return;
+
+      const view = tab.getAttribute("data-view");
+      if (!view) return;
+
+      Array.from(viewTabs.querySelectorAll(".tab")).forEach((t) => {
+        t.classList.toggle("active", t === tab);
+      });
+
+      if (view === "list") {
+        listView.classList.remove("hidden");
+        calendarView.classList.add("hidden");
+      } else {
+        listView.classList.add("hidden");
+        calendarView.classList.remove("hidden");
+      }
+    });
+
+    // Initial render
+    renderTasks();
+  </script>
 </body>
 </html>
