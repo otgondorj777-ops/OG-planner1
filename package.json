@@ -1,0 +1,27 @@
+{
+  "name": "og-planner-app",
+  "version": "1.0.0",
+  "description": "OG Planner App – Mongolia & Pennsylvania time planner",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "Otgondorj Luvsandagva",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.otgondorj.ogplanner",
+    "productName": "OG Planner App",
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
