@@ -484,404 +484,371 @@
     </div>
   </div>
 
-  <script>
-    const STORAGE_KEY = "og_planner_tasks_v2";
-    const DIFF_HOURS = 13; // MN UTC+8, PA UTC-5 (DST тооцоогүй)
-
-    function loadTasks() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch {
-        return [];
-      }
-    }
-
-    function saveTasks(tasks) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    }
-
-    function parseDateTime(dateStr, timeStr) {
-      if (!dateStr || !timeStr) return null;
-      const [y, m, d] = dateStr.split("-").map(Number);
-      const [hh, mm] = timeStr.split(":").map(Number);
-      return new Date(y, m - 1, d, hh, mm);
-    }
-
-    function formatDate(d) {
-      return d.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
+ <script>
+// ===========================
+// Service worker registration
+// ===========================
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./service-worker.js")
+      .then((registration) => {
+        console.log("Service worker registered with scope:", registration.scope);
+      })
+      .catch((error) => {
+        console.error("Service worker registration failed:", error);
       });
-    }
+  });
+}
 
-    function formatTime(d) {
-      return d.toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
+// ===========================
+// OG Planner App main script
+// ===========================
 
-    function computeBothTimes(sourceDate, mode) {
-      if (!sourceDate) return null;
-      let mn, pa;
-      if (mode === "MN_TO_PA") {
-        mn = sourceDate;
-        pa = new Date(mn.getTime() - DIFF_HOURS * 60 * 60 * 1000);
-      } else {
-        pa = sourceDate;
-        mn = new Date(pa.getTime() + DIFF_HOURS * 60 * 60 * 1000);
-      }
-      return { mn, pa };
-    }
+// DOM elements
+const form = document.getElementById("taskForm");
+const titleInput = document.getElementById("titleInput");
+const dateInput = document.getElementById("dateInput");
+const timeInput = document.getElementById("timeInput");
+const notesInput = document.getElementById("notesInput");
 
-    function buildMailto(task) {
-      const mn = new Date(task.mnDate);
-      const pa = new Date(task.paDate);
+const tzModeToggle = document.getElementById("tzModeToggle");
+const mnToPaBtn = document.querySelector('[data-mode="MN_PA"]');
+const paToMnBtn = document.querySelector('[data-mode="PA_MN"]');
 
-      const subject = `Plan: ${task.title}`;
+const filterButtons = document.querySelectorAll("[data-filter]");
+const tasksContainer = document.getElementById("tasksContainer");
 
-      const lines = [];
-      lines.push(`Title: ${task.title}`);
-      lines.push("");
-      lines.push(
-        `Mongolia time:    ${formatDate(mn)}  ${formatTime(mn)} (UTC+8)`
-      );
-      lines.push(
-        `Pennsylvania time: ${formatDate(pa)}  ${formatTime(pa)} (UTC-5)`
-      );
-      lines.push("");
-      if (task.notes) {
-        lines.push("Notes:");
-        lines.push(task.notes);
-        lines.push("");
-      }
-      lines.push("Best regards,");
-      lines.push("OTGONDORJ Luvsandagva");
-      lines.push(
-        '“Waiting for the ‘perfect time’ usually means never starting.”'
-      );
+const viewToggle = document.getElementById("viewToggle");
+const listViewBtn = document.querySelector('[data-view="list"]');
+const calendarViewBtn = document.querySelector('[data-view="calendar"]');
+const listWrapper = document.getElementById("listWrapper");
+const calendarWrapper = document.getElementById("calendarWrapper");
 
-      const body = encodeURIComponent(lines.join("\n"));
-      const subj = encodeURIComponent(subject);
-      return `mailto:?subject=${subj}&body=${body}`;
-    }
+// State
+let tzMode = "MN_PA"; // эсвэл "PA_MN"
+let tasks = [];
 
-    // simple reminder while tab open
-    function scheduleReminder(task) {
-      if (!("Notification" in window) || Notification.permission !== "granted") return;
-      const now = Date.now();
-      const mnTime = new Date(task.mnDate).getTime();
-      const diff = mnTime - now;
-      if (diff <= 0) return;
+// ===========================
+// Timezone helpers
+// ===========================
+const MN_TZ = "Asia/Ulaanbaatar";
+const PA_TZ = "America/New_York"; // Pennsylvania (EST/EDT)[web:257]
 
-      setTimeout(() => {
-        new Notification("OG Planner reminder", {
-          body: `${task.title} — MN: ${formatTime(new Date(task.mnDate))}`,
-          tag: task.id
-        });
-      }, diff);
-    }
+function parseLocalDateTime(dateStr, timeStr, timeZone) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute] = timeStr.split(":").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const tzDate = new Date(
+    date.toLocaleString("en-US", { timeZone })
+  );
+  return tzDate;
+}
 
-    let tasks = loadTasks();
-    let currentMode = "MN_TO_PA";
-    let currentFilter = "all";
-    let currentView = "list";
-    let editingTaskId = null;
+function formatInTimeZone(date, timeZone, opts = {}) {
+  return date.toLocaleString("en-US", {
+    timeZone,
+    ...opts
+  });
+}
 
-    const modeSegment = document.getElementById("modeSegment");
-    const filterSegment = document.getElementById("filterSegment");
-    const viewToggle = document.getElementById("viewToggle");
-    const titleInput = document.getElementById("titleInput");
-    const dateInput = document.getElementById("dateInput");
-    const timeInput = document.getElementById("timeInput");
-    const notesInput = document.getElementById("notesInput");
-    const addTaskBtn = document.getElementById("addTaskBtn");
-    const tasksContainer = document.getElementById("tasksContainer");
-    const enableNotifBtn = document.getElementById("enableNotifBtn");
+// ===========================
+// Task model helpers
+// ===========================
+function createTask({ title, notes, baseDate, baseTime, mode }) {
+  const sourceTz = mode === "MN_PA" ? MN_TZ : PA_TZ;
+  const targetTz = mode === "MN_PA" ? PA_TZ : MN_TZ;
 
-    modeSegment.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-mode]");
-      if (!btn) return;
-      currentMode = btn.getAttribute("data-mode");
-      [...modeSegment.querySelectorAll("button")].forEach((b) =>
-        b.classList.toggle("active", b === btn)
+  const sourceDate = parseLocalDateTime(baseDate, baseTime, sourceTz);
+
+  const sourceDateStr = formatInTimeZone(sourceDate, sourceTz, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+
+  const targetDateStr = formatInTimeZone(sourceDate, targetTz, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+
+  return {
+    id: crypto.randomUUID(),
+    title,
+    notes,
+    mode,
+    createdAt: new Date().toISOString(),
+    sourceTz,
+    targetTz,
+    sourceDateISO: sourceDate.toISOString(),
+    sourceDateStr,
+    targetDateStr,
+    done: false
+  };
+}
+
+// ===========================
+// Rendering
+// ===========================
+function renderTasks(filter = "all") {
+  tasksContainer.innerHTML = "";
+
+  let filtered = tasks.slice();
+  const now = new Date();
+
+  if (filter === "today") {
+    filtered = filtered.filter((t) => {
+      const d = new Date(t.sourceDateISO);
+      return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()
       );
     });
+  } else if (filter === "upcoming") {
+    filtered = filtered.filter((t) => new Date(t.sourceDateISO) > now);
+  } else if (filter === "done") {
+    filtered = filtered.filter((t) => t.done);
+  }
 
-    filterSegment.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-filter]");
-      if (!btn) return;
-      currentFilter = btn.getAttribute("data-filter");
-      [...filterSegment.querySelectorAll("button")].forEach((b) =>
-        b.classList.toggle("active", b === btn)
-      );
-      renderTasks();
-    });
+  if (!filtered.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "No tasks yet. Add your first focus block.";
+    tasksContainer.appendChild(empty);
+    return;
+  }
 
-    viewToggle.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-view]");
-      if (!btn) return;
-      currentView = btn.getAttribute("data-view");
-      [...viewToggle.querySelectorAll("button")].forEach((b) =>
-        b.classList.toggle("active", b === btn)
-      );
-      renderTasks();
-    });
-
-    enableNotifBtn.addEventListener("click", async () => {
-      if (!("Notification" in window)) {
-        alert("Notifications are not supported in this browser.");
-        return;
-      }
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") {
-        alert("You denied notifications.");
-        return;
-      }
-      alert("Reminders enabled (tab open үед). New task бүр дээр notification schedule хийнэ.");
-      tasks.forEach(scheduleReminder);
-    });
-
-    addTaskBtn.addEventListener("click", () => {
-      const title = titleInput.value.trim();
-      const dateStr = dateInput.value;
-      const timeStr = timeInput.value;
-      const notes = notesInput.value.trim();
-
-      if (!title || !dateStr || !timeStr) {
-        alert("Please fill title, date and time.");
-        return;
-      }
-
-      const sourceDate = parseDateTime(dateStr, timeStr);
-      const both = computeBothTimes(sourceDate, currentMode);
-      if (!both) {
-        alert("Time conversion error.");
-        return;
-      }
-
-      if (editingTaskId) {
-        const t = tasks.find((x) => x.id === editingTaskId);
-        if (t) {
-          t.title = title;
-          t.notes = notes;
-          t.mode = currentMode;
-          t.sourceDate = sourceDate.toISOString();
-          t.mnDate = both.mn.toISOString();
-          t.paDate = both.pa.toISOString();
-        }
-      } else {
-        const newTask = {
-          id: Date.now().toString(),
-          title,
-          notes,
-          mode: currentMode,
-          createdAt: new Date().toISOString(),
-          sourceDate: sourceDate.toISOString(),
-          mnDate: both.mn.toISOString(),
-          paDate: both.pa.toISOString(),
-          done: false,
-        };
-        tasks.push(newTask);
-        scheduleReminder(newTask);
-      }
-
-      saveTasks(tasks);
-      renderTasks();
-
-      editingTaskId = null;
-      addTaskBtn.innerHTML = '<span class="plus">＋</span><span>Save task with both time zones</span>';
-      titleInput.value = "";
-      notesInput.value = "";
-      timeInput.value = "";
-    });
-
-    function deleteTask(id) {
-      tasks = tasks.filter((t) => t.id !== id);
-      saveTasks(tasks);
-      renderTasks();
-    }
-
-    function toggleDone(id) {
-      const t = tasks.find((x) => x.id === id);
-      if (!t) return;
-      t.done = !t.done;
-      saveTasks(tasks);
-      renderTasks();
-    }
-
-    function startEditTask(task) {
-      editingTaskId = task.id;
-      titleInput.value = task.title;
-      notesInput.value = task.notes || "";
-      const src = new Date(task.sourceDate || task.mnDate);
-      dateInput.value = src.toISOString().slice(0, 10);
-      timeInput.value = src.toTimeString().slice(0, 5);
-      currentMode = task.mode;
-      [...modeSegment.querySelectorAll("button")].forEach((b) =>
-        b.classList.toggle("active", b.getAttribute("data-mode") === currentMode)
-      );
-      addTaskBtn.innerHTML = '<span class="plus">💾</span><span>Save changes</span>';
-    }
-
-    function matchesFilter(task) {
-      if (currentFilter === "all") return true;
-      const today = new Date();
-      const mn = new Date(task.mnDate);
-      const isSameDay =
-        mn.getFullYear() === today.getFullYear() &&
-        mn.getMonth() === today.getMonth() &&
-        mn.getDate() === today.getDate();
-      if (currentFilter === "today") return isSameDay;
-      if (currentFilter === "upcoming") return !task.done && mn > today;
-      if (currentFilter === "done") return !!task.done;
-      return true;
-    }
-
-    function groupByDate(filteredTasks) {
-      const groups = {};
-      filteredTasks.forEach((t) => {
-        const d = new Date(t.mnDate);
-        const key = d.toISOString().slice(0, 10);
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(t);
-      });
-      const sorted = Object.keys(groups).sort();
-      return sorted.map((k) => ({ key: k, tasks: groups[k] }));
-    }
-
-    function buildTaskCard(task) {
-      const mn = new Date(task.mnDate);
-      const pa = new Date(task.paDate);
-
+  filtered
+    .sort((a, b) => new Date(a.sourceDateISO) - new Date(b.sourceDateISO))
+    .forEach((task) => {
       const card = document.createElement("div");
       card.className = "task-card";
 
-      const main = document.createElement("div");
-      main.className = "task-main";
-
-      const titleRow = document.createElement("div");
-      titleRow.className = "task-title-row";
+      const header = document.createElement("div");
+      header.className = "task-header";
 
       const titleEl = document.createElement("div");
       titleEl.className = "task-title";
-      titleEl.textContent = task.title;
+      titleEl.textContent = task.title || "(No title)";
 
-      const modeBadge = document.createElement("div");
-      modeBadge.className =
-        "badge-soft " + (task.mode === "MN_TO_PA" ? "mn" : "");
-      modeBadge.textContent =
-        task.mode === "MN_TO_PA" ? "MN → PA" : "PA → MN";
+      const tzChip = document.createElement("span");
+      tzChip.className = "tz-chip";
+      tzChip.textContent = task.mode === "MN_PA" ? "MN → PA" : "PA → MN";
 
-      titleRow.appendChild(titleEl);
-      titleRow.appendChild(modeBadge);
+      header.appendChild(titleEl);
+      header.appendChild(tzChip);
 
-      const timesEl = document.createElement("div");
-      timesEl.className = "task-times";
-      timesEl.innerHTML =
-        `MN: <strong>${formatDate(mn)}</strong> ${formatTime(mn)} · ` +
-        `PA: <strong>${formatDate(pa)}</strong> ${formatTime(pa)}`;
+      const body = document.createElement("div");
+      body.className = "task-body";
 
-      main.appendChild(titleRow);
-      main.appendChild(timesEl);
+      const line1 = document.createElement("div");
+      line1.className = "task-line";
+      line1.innerHTML =
+        `<strong>MN:</strong> ${formatInTimeZone(
+          new Date(task.sourceDateISO),
+          MN_TZ,
+          {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          }
+        )}`;
+
+      const line2 = document.createElement("div");
+      line2.className = "task-line";
+      line2.innerHTML =
+        `<strong>PA:</strong> ${formatInTimeZone(
+          new Date(task.sourceDateISO),
+          PA_TZ,
+          {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          }
+        )}`;
+
+      body.appendChild(line1);
+      body.appendChild(line2);
 
       if (task.notes) {
-        const notesEl = document.createElement("div");
-        notesEl.className = "task-notes";
-        notesEl.textContent = task.notes;
-        main.appendChild(notesEl);
+        const notes = document.createElement("div");
+        notes.className = "task-notes";
+        notes.textContent = task.notes;
+        body.appendChild(notes);
       }
 
       const actions = document.createElement("div");
       actions.className = "task-actions";
 
-      const emailBtn = document.createElement("button");
-      emailBtn.className = "pill-btn pill-email";
-      emailBtn.innerHTML = '<span class="icon">✉️</span><span>Email</span>';
-      emailBtn.addEventListener("click", () => {
-        const link = buildMailto(task);
-        window.location.href = link;
-      });
-
       const doneBtn = document.createElement("button");
-      doneBtn.className = "pill-btn pill-delete";
-      doneBtn.innerHTML = `<span class="icon">${
-        task.done ? "↺" : "✓"
-      }</span><span>${task.done ? "Undo" : "Done"}</span>`;
-      doneBtn.addEventListener("click", () => toggleDone(task.id));
+      doneBtn.type = "button";
+      doneBtn.className = "pill-btn";
+      doneBtn.textContent = task.done ? "✓ Done" : "Mark done";
+      doneBtn.addEventListener("click", () => {
+        task.done = !task.done;
+        saveTasks();
+        renderTasks(getActiveFilter());
+      });
 
       const editBtn = document.createElement("button");
-      editBtn.className = "pill-btn pill-delete";
-      editBtn.innerHTML = '<span class="icon">✎</span><span>Edit</span>';
-      editBtn.addEventListener("click", () => startEditTask(task));
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "pill-btn pill-delete";
-      deleteBtn.innerHTML = '<span class="icon">✕</span><span>Delete</span>';
-      deleteBtn.addEventListener("click", () => {
-        if (confirm("Delete this task?")) deleteTask(task.id);
+      editBtn.type = "button";
+      editBtn.className = "pill-btn ghost";
+      editBtn.textContent = "Edit";
+      editBtn.addEventListener("click", () => {
+        titleInput.value = task.title;
+        notesInput.value = task.notes || "";
+        const d = new Date(task.sourceDateISO);
+        dateInput.value = d.toISOString().slice(0, 10);
+        timeInput.value = d.toISOString().slice(11, 16);
+        tzMode = task.mode;
+        updateTzModeUI();
       });
 
-      actions.appendChild(emailBtn);
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "pill-btn danger";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.addEventListener("click", () => {
+        tasks = tasks.filter((t) => t.id !== task.id);
+        saveTasks();
+        renderTasks(getActiveFilter());
+      });
+
       actions.appendChild(doneBtn);
       actions.appendChild(editBtn);
       actions.appendChild(deleteBtn);
 
-      card.appendChild(main);
+      card.appendChild(header);
+      card.appendChild(body);
       card.appendChild(actions);
-      return card;
-    }
 
-    function renderTasks() {
-      const filtered = tasks.filter(matchesFilter);
-      tasksContainer.innerHTML = "";
+      tasksContainer.appendChild(card);
+    });
+}
 
-      if (filtered.length === 0) {
-        tasksContainer.innerHTML =
-          '<div class="hint-text" style="margin-top:8px;">No tasks yet. Add your first task above.</div>';
-        return;
-      }
+// ===========================
+// Calendar view (simple placeholder)
+// ===========================
+function renderCalendar() {
+  const calendar = document.getElementById("calendarGrid");
+  if (!calendar) return;
+  calendar.innerHTML = "Calendar view coming soon…";
+}
 
-      if (currentView === "calendar") {
-        const groups = groupByDate(filtered);
-        groups.forEach((g) => {
-          const dateObj = new Date(g.tasks[0].mnDate);
-          const groupEl = document.createElement("div");
-          groupEl.className = "task-date-group";
+// ===========================
+// State persistence
+// ===========================
+function saveTasks() {
+  localStorage.setItem("ogPlannerTasks", JSON.stringify(tasks));
+}
 
-          const heading = document.createElement("div");
-          heading.className = "task-date-heading";
-          heading.textContent = formatDate(dateObj).toUpperCase();
-          groupEl.appendChild(heading);
+function loadTasks() {
+  const raw = localStorage.getItem("ogPlannerTasks");
+  if (!raw) return;
+  try {
+    tasks = JSON.parse(raw);
+  } catch {
+    tasks = [];
+  }
+}
 
-          g.tasks
-            .sort((a, b) => new Date(a.mnDate) - new Date(b.mnDate))
-            .forEach((task) => {
-              groupEl.appendChild(buildTaskCard(task));
-            });
+// ===========================
+// UI helpers
+// ===========================
+function updateTzModeUI() {
+  if (tzMode === "MN_PA") {
+    mnToPaBtn.classList.add("active");
+    paToMnBtn.classList.remove("active");
+  } else {
+    paToMnBtn.classList.add("active");
+    mnToPaBtn.classList.remove("active");
+  }
+}
 
-          tasksContainer.appendChild(groupEl);
-        });
-      } else {
-        const sorted = [...filtered].sort(
-          (a, b) => new Date(a.mnDate) - new Date(b.mnDate)
-        );
-        sorted.forEach((task) => {
-          tasksContainer.appendChild(buildTaskCard(task));
-        });
-      }
-    }
+function getActiveFilter() {
+  const btn = document.querySelector("[data-filter].active");
+  return btn ? btn.dataset.filter : "all";
+}
 
-    (function init() {
-      const today = new Date();
-      dateInput.value = today.toISOString().slice(0, 10);
-      renderTasks();
-      if ("Notification" in window && Notification.permission === "granted") {
-        tasks.forEach(scheduleReminder);
-      }
-    })();
-  </script>
-</body>
-</html>
+// ===========================
+// Event listeners
+// ===========================
+tzModeToggle.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-mode]");
+  if (!btn) return;
+  tzMode = btn.dataset.mode;
+  updateTzModeUI();
+});
+
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const title = titleInput.value.trim();
+  const notes = notesInput.value.trim();
+  const date = dateInput.value;
+  const time = timeInput.value;
+
+  if (!date || !time) {
+    alert("Please choose date and time.");
+    return;
+  }
+
+  const task = createTask({
+    title,
+    notes,
+    baseDate: date,
+    baseTime: time,
+    mode: tzMode
+  });
+
+  tasks.push(task);
+  saveTasks();
+  form.reset();
+  renderTasks(getActiveFilter());
+});
+
+filterButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    filterButtons.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderTasks(btn.dataset.filter);
+  });
+});
+
+viewToggle.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-view]");
+  if (!btn) return;
+  if (btn.dataset.view === "list") {
+    listViewBtn.classList.add("active");
+    calendarViewBtn.classList.remove("active");
+    listWrapper.style.display = "block";
+    calendarWrapper.style.display = "none";
+  } else {
+    calendarViewBtn.classList.add("active");
+    listViewBtn.classList.remove("active");
+    listWrapper.style.display = "none";
+    calendarWrapper.style.display = "block";
+    renderCalendar();
+  }
+});
+
+// ===========================
+// Initial load
+// ===========================
+loadTasks();
+updateTzModeUI();
+renderTasks("all");
+</script>
