@@ -1,854 +1,624 @@
 <!DOCTYPE html>
-<html lang="mn">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>OG Planner App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OG planner app</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#ffffff" />
 
-  <!-- PWA / icons -->
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-  <meta name="theme-color" content="#e0f2fe">
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json" />
 
+  <!-- Basic reset + font -->
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at top left, #e0f2fe, #f9fafb 40%, #e5e7eb 80%);
-      color: #1f2933;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 32px 12px 40px;
+      font-family: -apple-system, system-ui, -system-ui, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background: radial-gradient(circle at top left, #e0f2ff, #f5f7ff);
+      padding: 24px;
+      color: #111827;
     }
-
-    .app-wrapper {
-      width: 100%;
-      max-width: 420px;
-    }
-
-    .card {
+    .app-shell {
+      max-width: 480px;
+      margin: 0 auto;
       background: #ffffff;
-      border-radius: 24px;
-      padding: 20px 18px 16px;
+      border-radius: 28px;
+      padding: 24px 24px 20px;
       box-shadow:
-        0 10px 25px rgba(15, 23, 42, 0.08),
-        0 0 0 1px rgba(148, 163, 184, 0.16);
-      backdrop-filter: blur(10px);
+        0 18px 45px rgba(15, 23, 42, 0.16),
+        0 0 0 1px rgba(148, 163, 184, 0.15);
     }
-
-    .app-badge-row {
-      display: flex;
+    .badge {
+      display: inline-flex;
       align-items: center;
-      gap: 16px;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #ecfdf3;
+      color: #15803d;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .badge-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 750;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+    .sub {
+      font-size: 14px;
+      color: #6b7280;
       margin-bottom: 18px;
     }
-
-    .app-badge-outer {
-      background: radial-gradient(circle at 20% 0%, #22c55e, #3b82f6);
-      padding: 3px;
-      border-radius: 24px;
-      box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
-    }
-
-    .app-badge-inner {
-      background: #f9fafb;
-      border-radius: 22px;
-      padding: 14px 20px 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .app-dot {
-      width: 12px;
-      height: 12px;
+    .pill-primary {
+      width: 100%;
       border-radius: 999px;
-      background: radial-gradient(circle at 30% 0%, #22c55e, #16a34a);
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
-    }
-
-    .app-badge-text {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.1;
-    }
-
-    .app-badge-text span:first-child {
-      font-size: 12px;
+      padding: 12px 18px;
+      border: none;
+      color: #f9fafb;
       font-weight: 600;
-      color: #16a34a;
-    }
-
-    .app-badge-text span:last-child {
       font-size: 15px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .app-title {
-      font-size: 26px;
-      font-weight: 700;
-      color: #0f172a;
-      margin: 0 0 6px;
-    }
-
-    .app-subtitle {
-      font-size: 13px;
-      color: #4b5563;
-      margin-bottom: 14px;
-      max-width: 280px;
-    }
-
-    .segment-row {
+      cursor: pointer;
+      background: linear-gradient(135deg, #22c55e, #0ea5e9);
+      box-shadow:
+        0 16px 40px rgba(8, 47, 73, 0.35),
+        0 0 0 1px rgba(59, 130, 246, 0.2);
       display: flex;
       justify-content: center;
-      margin-bottom: 12px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
     }
-
-    .segment {
-      display: inline-flex;
-      padding: 4px;
-      border-radius: 999px;
-      background: #f3f4f6;
-      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
-      gap: 4px;
+    .pill-primary span {
+      font-size: 18px;
     }
-
-    .segment button {
-      border: none;
-      padding: 6px 18px;
-      border-radius: 999px;
+    .field-label {
       font-size: 13px;
       font-weight: 600;
-      cursor: pointer;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+    .tz-toggle {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 3px;
+      background: #f3f4ff;
+      margin-bottom: 18px;
+    }
+    .tz-toggle button {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
       background: transparent;
-      color: #6b7280;
-      transition: all 0.16s ease-out;
+      cursor: pointer;
+      min-width: 90px;
     }
-
-    .segment button.active {
-      background: linear-gradient(135deg, #22c55e, #3b82f6);
-      color: #ffffff;
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+    .tz-toggle button.active {
+      background: #2563eb;
+      color: #f9fafb;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
     }
-
-    .field-label {
-      font-size: 12px;
-      color: #6b7280;
-      margin-bottom: 4px;
-      margin-top: 10px;
+    .field {
+      margin-bottom: 14px;
     }
-
-    .field-row {
+    .input, .input-inline {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: #f9fafb;
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s;
+    }
+    .input:focus, .input-inline:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+    }
+    .row-2 {
       display: flex;
       gap: 10px;
     }
-
-    .input, textarea {
-      width: 100%;
-      padding: 9px 11px;
-      border-radius: 11px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: #f9fafb;
-      color: #111827;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .input::placeholder,
-    textarea::placeholder {
-      color: #9ca3af;
-    }
-
-    .input:focus,
-    textarea:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
-      background: #ffffff;
-    }
-
-    textarea {
+    textarea.input {
       resize: vertical;
-      min-height: 72px;
-      max-height: 140px;
+      min-height: 60px;
     }
-
-    .hint-text {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 2px;
+    .save-btn {
+      margin-top: 6px;
+      margin-bottom: 20px;
     }
-
-    .primary-btn {
-      margin-top: 12px;
-      width: 100%;
-      border: none;
-      border-radius: 999px;
-      padding: 11px 16px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      color: #ffffff;
-      background: linear-gradient(135deg, #22c55e, #3b82f6);
-      box-shadow:
-        0 10px 25px rgba(59, 130, 246, 0.35),
-        0 0 0 1px rgba(15, 23, 42, 0.12);
+    .filter-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 12px;
     }
-
-    .primary-btn span.plus {
-      font-size: 20px;
-      line-height: 1;
-    }
-
-    .view-toggle {
+    .filters {
       display: inline-flex;
       border-radius: 999px;
-      background: #f3f4f6;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      overflow: hidden;
+      padding: 3px;
+      background: #f3f4ff;
     }
-
-    .view-toggle button {
+    .filters button {
       border: none;
-      padding: 4px 14px;
+      border-radius: 999px;
+      padding: 6px 12px;
       font-size: 12px;
+      font-weight: 600;
       color: #6b7280;
       background: transparent;
       cursor: pointer;
-      font-weight: 500;
+      min-width: 70px;
     }
-
-    .view-toggle button.active {
-      background: rgba(255, 255, 255, 0.9);
-      color: #111827;
+    .filters button.active {
+      background: #111827;
+      color: #f9fafb;
     }
-
-    .tasks-container {
-      margin-top: 10px;
+    .view-toggle {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 3px;
+      background: #ede9fe;
     }
-
-    .task-date-group {
-      margin-bottom: 10px;
-    }
-
-    .task-date-heading {
+    .view-toggle button {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
       font-size: 12px;
-      text-transform: uppercase;
-      color: #9ca3af;
-      letter-spacing: 0.08em;
-      margin-bottom: 4px;
+      font-weight: 600;
+      color: #6b7280;
+      background: transparent;
+      cursor: pointer;
+      min-width: 68px;
     }
-
+    .view-toggle button.active {
+      background: #4f46e5;
+      color: #f9fafb;
+    }
     .task-card {
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 9px 11px 8px;
-      border: 1px solid rgba(209, 213, 219, 0.9);
-      margin-bottom: 7px;
-      display: grid;
-      grid-template-columns: auto 90px;
-      gap: 4px 10px;
-      align-items: center;
+      margin-top: 10px;
+      border-radius: 18px;
+      padding: 12px 12px 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
     }
-
-    .task-main {
-      min-width: 0;
-    }
-
-    .task-title-row {
+    .task-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 6px;
+      margin-bottom: 6px;
     }
-
     .task-title {
       font-size: 14px;
       font-weight: 600;
-      color: #111827;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
-
-    .badge-soft {
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(59, 130, 246, 0.08);
-      color: #1d4ed8;
-      border: 1px solid rgba(59, 130, 246, 0.5);
-    }
-
-    .badge-soft.mn {
-      background: rgba(34, 197, 94, 0.1);
-      color: #15803d;
-      border-color: rgba(34, 197, 94, 0.55);
-    }
-
-    .task-times {
+    .tz-chip {
       font-size: 11px;
-      color: #4b5563;
-      margin-top: 1px;
-    }
-
-    .task-times strong {
       font-weight: 600;
-      color: #111827;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #ecfeff;
+      color: #0369a1;
     }
-
+    .task-line {
+      font-size: 12px;
+      color: #4b5563;
+    }
+    .task-line + .task-line { margin-top: 2px; }
     .task-notes {
-      font-size: 11px;
+      margin-top: 6px;
+      font-size: 12px;
       color: #6b7280;
-      margin-top: 2px;
     }
-
     .task-actions {
+      margin-top: 8px;
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
+      gap: 6px;
+      flex-wrap: wrap;
     }
-
     .pill-btn {
       border-radius: 999px;
       border: none;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
-      padding: 4px 9px;
-      font-size: 11px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #f9fafb;
-      color: #374151;
-      border: 1px solid rgba(209, 213, 219, 0.9);
-    }
-
-    .pill-email {
-      background: rgba(59, 130, 246, 0.1);
+      background: #e5f3ff;
       color: #1d4ed8;
-      border: 1px solid rgba(59, 130, 246, 0.6);
     }
-
-    .pill-delete {
-      background: #f9fafb;
-      color: #4b5563;
-      border: 1px solid rgba(209, 213, 219, 0.9);
+    .pill-btn.ghost {
+      background: #f3f4f6;
+      color: #374151;
     }
-
-    .pill-email span.icon,
-    .pill-delete span.icon {
-      font-size: 13px;
-      line-height: 1;
+    .pill-btn.danger {
+      background: #fee2e2;
+      color: #b91c1c;
     }
-
-    .footer-card {
-      margin-top: 16px;
-      font-size: 12px;
-      color: #4b5563;
-      text-align: left;
-      padding: 0 3px;
-    }
-
-    .footer-quote {
-      font-size: 11px;
-      color: #6b7280;
-      margin-top: 4px;
-      font-style: italic;
-    }
-
-    .brand-line {
-      font-size: 11px;
-      color: #6b7280;
-      text-align: center;
+    .empty-state {
       margin-top: 10px;
+      font-size: 12px;
+      color: #9ca3af;
     }
-
-    @media (max-width: 400px) {
-      .card {
-        padding: 18px 16px 14px;
-      }
-
-      .app-title {
-        font-size: 24px;
-      }
+    .footer {
+      margin-top: 16px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .footer strong { color: #111827; }
+    .view-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+    @media (max-width: 480px) {
+      body { padding: 16px; }
+      .app-shell { border-radius: 24px; padding: 20px 18px 16px; }
+      .view-row { margin-top: 8px; }
     }
   </style>
 </head>
+
 <body>
-  <div class="app-wrapper">
-    <div class="card">
-      <div class="app-badge-row">
-        <div class="app-badge-outer">
-          <div class="app-badge-inner">
-            <div class="app-dot"></div>
-            <div class="app-badge-text">
-              <span>OG</span>
-              <span>planner app</span>
-            </div>
-          </div>
+  <div class="app-shell">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      <span>OG planner app</span>
+    </div>
+
+    <h1>Today’s focus</h1>
+    <p class="sub">Plan once, see both time zones. Mongolia &amp; Pennsylvania side-by-side.</p>
+
+    <button class="pill-primary">
+      <span>🔔</span>
+      <span>Enable reminders (tab open)</span>
+    </button>
+
+    <div class="field-label">Time zone mode</div>
+    <div class="tz-toggle" id="tzModeToggle">
+      <button type="button" data-mode="MN_PA" class="active">MN → PA</button>
+      <button type="button" data-mode="PA_MN">PA → MN</button>
+    </div>
+
+    <form id="taskForm" autocomplete="off">
+      <div class="field">
+        <div class="field-label">Title</div>
+        <input id="titleInput" class="input" placeholder="Write your main task..." />
+      </div>
+
+      <div class="field">
+        <div class="field-label">Date</div>
+        <div class="row-2">
+          <input id="dateInput" type="date" class="input-inline" />
+          <input id="timeInput" type="time" class="input-inline" />
         </div>
       </div>
 
-      <h1 class="app-title">Today’s focus</h1>
-      <p class="app-subtitle">
-        Plan once, see both time zones. Mongolia &amp; Pennsylvania side-by-side.
-      </p>
-
-      <!-- Simple reminder enable -->
-      <button id="enableNotifBtn" class="primary-btn" style="margin-top:0;margin-bottom:10px;">
-        <span class="plus">🔔</span>
-        <span>Enable reminders (tab open)</span>
-      </button>
-
-      <div class="field-label">Time zone mode</div>
-      <div class="segment-row">
-        <div class="segment" id="modeSegment">
-          <button type="button" data-mode="MN_TO_PA" class="active">MN → PA</button>
-          <button type="button" data-mode="PA_TO_MN">PA → MN</button>
-        </div>
+      <div class="field">
+        <div class="field-label">Notes (optional)</div>
+        <textarea id="notesInput" class="input" placeholder="Details, links, or context..."></textarea>
       </div>
 
-      <div class="field-label">Title</div>
-      <input id="titleInput" class="input" placeholder="Write your main task…" />
-
-      <div class="field-row">
-        <div style="flex: 1;">
-          <div class="field-label">Date</div>
-          <input id="dateInput" class="input" type="date" />
-        </div>
-        <div style="flex: 1;">
-          <div class="field-label">Time</div>
-          <input id="timeInput" class="input" type="time" />
-        </div>
-      </div>
-      <div class="hint-text">We’ll convert and store both MN &amp; PA times automatically.</div>
-
-      <div class="field-label">Notes (optional)</div>
-      <textarea id="notesInput"
-        placeholder="Details, links, or context…"></textarea>
-
-      <button id="addTaskBtn" class="primary-btn">
-        <span class="plus">＋</span>
+      <button type="submit" class="pill-primary save-btn">
+        <span>＋</span>
         <span>Save task with both time zones</span>
       </button>
+    </form>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
-        <div>
-          <div class="field-label" style="margin-top:0;">Filter</div>
-          <div class="segment-row" style="justify-content:flex-start;margin-bottom:0;">
-            <div class="segment" id="filterSegment">
-              <button type="button" data-filter="all" class="active">All</button>
-              <button type="button" data-filter="today">Today</button>
-              <button type="button" data-filter="upcoming">Upcoming</button>
-              <button type="button" data-filter="done">Done</button>
-            </div>
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div class="field-label" style="margin-top:0;">View</div>
-          <div class="view-toggle" id="viewToggle">
-            <button type="button" data-view="list" class="active">List</button>
-            <button type="button" data-view="calendar">Calendar</button>
-          </div>
-        </div>
+    <div class="filter-row">
+      <div class="filters">
+        <button type="button" data-filter="all" class="active">All</button>
+        <button type="button" data-filter="today">Today</button>
+        <button type="button" data-filter="upcoming">Upcoming</button>
+        <button type="button" data-filter="done">Done</button>
       </div>
-
-      <div id="tasksContainer" class="tasks-container"></div>
-
-      <div class="footer-card">
-        Best regards,<br />
-        <strong>OTGONDORJ Luvsandagva</strong>
-        <p class="footer-quote">
-          “Waiting for the ‘perfect time’ usually means never starting.”
-        </p>
+      <div class="view-toggle" id="viewToggle">
+        <button type="button" data-view="list" class="active">List</button>
+        <button type="button" data-view="calendar">Calendar</button>
       </div>
     </div>
 
-    <div class="brand-line">
-      OG Planner App — web &amp; mobile, two time zones in one place.
+    <div id="listWrapper">
+      <div id="tasksContainer"></div>
+    </div>
+
+    <div id="calendarWrapper" style="display:none;">
+      <div id="calendarGrid" class="empty-state">Calendar view coming soon…</div>
+    </div>
+
+    <div class="footer">
+      Best regards,<br />
+      <strong>OTGONDORJ Luvsandagva</strong><br />
+      “Waiting for the ‘perfect time’ usually means never starting.”
     </div>
   </div>
 
- <script>
-// ===========================
-// Service worker registration
-// ===========================
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./service-worker.js")
-      .then((registration) => {
-        console.log("Service worker registered with scope:", registration.scope);
-      })
-      .catch((error) => {
-        console.error("Service worker registration failed:", error);
-      });
-  });
-}
-
-// ===========================
-// OG Planner App main script
-// ===========================
-
-// DOM elements
-const form = document.getElementById("taskForm");
-const titleInput = document.getElementById("titleInput");
-const dateInput = document.getElementById("dateInput");
-const timeInput = document.getElementById("timeInput");
-const notesInput = document.getElementById("notesInput");
-
-const tzModeToggle = document.getElementById("tzModeToggle");
-const mnToPaBtn = document.querySelector('[data-mode="MN_PA"]');
-const paToMnBtn = document.querySelector('[data-mode="PA_MN"]');
-
-const filterButtons = document.querySelectorAll("[data-filter]");
-const tasksContainer = document.getElementById("tasksContainer");
-
-const viewToggle = document.getElementById("viewToggle");
-const listViewBtn = document.querySelector('[data-view="list"]');
-const calendarViewBtn = document.querySelector('[data-view="calendar"]');
-const listWrapper = document.getElementById("listWrapper");
-const calendarWrapper = document.getElementById("calendarWrapper");
-
-// State
-let tzMode = "MN_PA"; // эсвэл "PA_MN"
-let tasks = [];
-
-// ===========================
-// Timezone helpers
-// ===========================
-const MN_TZ = "Asia/Ulaanbaatar";
-const PA_TZ = "America/New_York"; // Pennsylvania (EST/EDT)[web:257]
-
-function parseLocalDateTime(dateStr, timeStr, timeZone) {
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const [hour, minute] = timeStr.split(":").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  const tzDate = new Date(
-    date.toLocaleString("en-US", { timeZone })
-  );
-  return tzDate;
-}
-
-function formatInTimeZone(date, timeZone, opts = {}) {
-  return date.toLocaleString("en-US", {
-    timeZone,
-    ...opts
-  });
-}
-
-// ===========================
-// Task model helpers
-// ===========================
-function createTask({ title, notes, baseDate, baseTime, mode }) {
-  const sourceTz = mode === "MN_PA" ? MN_TZ : PA_TZ;
-  const targetTz = mode === "MN_PA" ? PA_TZ : MN_TZ;
-
-  const sourceDate = parseLocalDateTime(baseDate, baseTime, sourceTz);
-
-  const sourceDateStr = formatInTimeZone(sourceDate, sourceTz, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  });
-
-  const targetDateStr = formatInTimeZone(sourceDate, targetTz, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  });
-
-  return {
-    id: crypto.randomUUID(),
-    title,
-    notes,
-    mode,
-    createdAt: new Date().toISOString(),
-    sourceTz,
-    targetTz,
-    sourceDateISO: sourceDate.toISOString(),
-    sourceDateStr,
-    targetDateStr,
-    done: false
-  };
-}
-
-// ===========================
-// Rendering
-// ===========================
-function renderTasks(filter = "all") {
-  tasksContainer.innerHTML = "";
-
-  let filtered = tasks.slice();
-  const now = new Date();
-
-  if (filter === "today") {
-    filtered = filtered.filter((t) => {
-      const d = new Date(t.sourceDateISO);
-      return (
-        d.getFullYear() === now.getFullYear() &&
-        d.getMonth() === now.getMonth() &&
-        d.getDate() === now.getDate()
-      );
+  <script>
+  // ===========================
+  // Service worker registration
+  // ===========================
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("./service-worker.js")
+        .then((registration) => {
+          console.log("Service worker registered with scope:", registration.scope);
+        })
+        .catch((error) => {
+          console.error("Service worker registration failed:", error);
+        });
     });
-  } else if (filter === "upcoming") {
-    filtered = filtered.filter((t) => new Date(t.sourceDateISO) > now);
-  } else if (filter === "done") {
-    filtered = filtered.filter((t) => t.done);
   }
 
-  if (!filtered.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "No tasks yet. Add your first focus block.";
-    tasksContainer.appendChild(empty);
-    return;
+  // ===========================
+  // OG Planner App main script
+  // ===========================
+
+  const form = document.getElementById("taskForm");
+  const titleInput = document.getElementById("titleInput");
+  const dateInput = document.getElementById("dateInput");
+  const timeInput = document.getElementById("timeInput");
+  const notesInput = document.getElementById("notesInput");
+
+  const tzModeToggle = document.getElementById("tzModeToggle");
+  const filterButtons = document.querySelectorAll("[data-filter]");
+  const tasksContainer = document.getElementById("tasksContainer");
+
+  const viewToggle = document.getElementById("viewToggle");
+  const listWrapper = document.getElementById("listWrapper");
+  const calendarWrapper = document.getElementById("calendarWrapper");
+
+  let tzMode = "MN_PA";
+  let tasks = [];
+
+  const MN_TZ = "Asia/Ulaanbaatar";
+  const PA_TZ = "America/New_York";
+
+  function parseLocalDateTime(dateStr, timeStr, timeZone) {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const [hour, minute] = timeStr.split(":").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+    const tzDate = new Date(date.toLocaleString("en-US", { timeZone }));
+    return tzDate;
   }
 
-  filtered
-    .sort((a, b) => new Date(a.sourceDateISO) - new Date(b.sourceDateISO))
-    .forEach((task) => {
-      const card = document.createElement("div");
-      card.className = "task-card";
+  function formatInTimeZone(date, timeZone, opts = {}) {
+    return date.toLocaleString("en-US", {
+      timeZone,
+      ...opts
+    });
+  }
 
-      const header = document.createElement("div");
-      header.className = "task-header";
+  function createTask({ title, notes, baseDate, baseTime, mode }) {
+    const sourceTz = mode === "MN_PA" ? MN_TZ : PA_TZ;
+    const sourceDate = parseLocalDateTime(baseDate, baseTime, sourceTz);
 
-      const titleEl = document.createElement("div");
-      titleEl.className = "task-title";
-      titleEl.textContent = task.title || "(No title)";
+    return {
+      id: crypto.randomUUID(),
+      title,
+      notes,
+      mode,
+      createdAt: new Date().toISOString(),
+      sourceDateISO: sourceDate.toISOString(),
+      done: false
+    };
+  }
 
-      const tzChip = document.createElement("span");
-      tzChip.className = "tz-chip";
-      tzChip.textContent = task.mode === "MN_PA" ? "MN → PA" : "PA → MN";
+  function saveTasks() {
+    localStorage.setItem("ogPlannerTasks", JSON.stringify(tasks));
+  }
 
-      header.appendChild(titleEl);
-      header.appendChild(tzChip);
+  function loadTasks() {
+    const raw = localStorage.getItem("ogPlannerTasks");
+    if (!raw) return;
+    try { tasks = JSON.parse(raw); } catch { tasks = []; }
+  }
 
-      const body = document.createElement("div");
-      body.className = "task-body";
+  function updateTzModeUI() {
+    const buttons = tzModeToggle.querySelectorAll("button");
+    buttons.forEach((b) => {
+      b.classList.toggle("active", b.dataset.mode === tzMode);
+    });
+  }
 
-      const line1 = document.createElement("div");
-      line1.className = "task-line";
-      line1.innerHTML =
-        `<strong>MN:</strong> ${formatInTimeZone(
-          new Date(task.sourceDateISO),
-          MN_TZ,
-          {
+  function getActiveFilter() {
+    const btn = document.querySelector("[data-filter].active");
+    return btn ? btn.dataset.filter : "all";
+  }
+
+  function renderTasks(filter = "all") {
+    tasksContainer.innerHTML = "";
+    let filtered = tasks.slice();
+    const now = new Date();
+
+    if (filter === "today") {
+      filtered = filtered.filter((t) => {
+        const d = new Date(t.sourceDateISO);
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate()
+        );
+      });
+    } else if (filter === "upcoming") {
+      filtered = filtered.filter((t) => new Date(t.sourceDateISO) > now);
+    } else if (filter === "done") {
+      filtered = filtered.filter((t) => t.done);
+    }
+
+    if (!filtered.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "No tasks yet. Add your first focus block.";
+      tasksContainer.appendChild(empty);
+      return;
+    }
+
+    filtered
+      .sort((a, b) => new Date(a.sourceDateISO) - new Date(b.sourceDateISO))
+      .forEach((task) => {
+        const card = document.createElement("div");
+        card.className = "task-card";
+
+        const header = document.createElement("div");
+        header.className = "task-header";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "task-title";
+        titleEl.textContent = task.title || "(No title)";
+
+        const tzChip = document.createElement("span");
+        tzChip.className = "tz-chip";
+        tzChip.textContent = task.mode === "MN_PA" ? "MN → PA" : "PA → MN";
+
+        header.appendChild(titleEl);
+        header.appendChild(tzChip);
+
+        const body = document.createElement("div");
+        body.className = "task-body";
+
+        const line1 = document.createElement("div");
+        line1.className = "task-line";
+        line1.innerHTML =
+          "<strong>MN:</strong> " +
+          formatInTimeZone(new Date(task.sourceDateISO), MN_TZ, {
             year: "numeric",
             month: "short",
             day: "2-digit",
             hour: "2-digit",
             minute: "2-digit",
             hour12: false
-          }
-        )}`;
+          });
 
-      const line2 = document.createElement("div");
-      line2.className = "task-line";
-      line2.innerHTML =
-        `<strong>PA:</strong> ${formatInTimeZone(
-          new Date(task.sourceDateISO),
-          PA_TZ,
-          {
+        const line2 = document.createElement("div");
+        line2.className = "task-line";
+        line2.innerHTML =
+          "<strong>PA:</strong> " +
+          formatInTimeZone(new Date(task.sourceDateISO), PA_TZ, {
             year: "numeric",
             month: "short",
             day: "2-digit",
             hour: "2-digit",
             minute: "2-digit",
             hour12: false
-          }
-        )}`;
+          });
 
-      body.appendChild(line1);
-      body.appendChild(line2);
+        body.appendChild(line1);
+        body.appendChild(line2);
 
-      if (task.notes) {
-        const notes = document.createElement("div");
-        notes.className = "task-notes";
-        notes.textContent = task.notes;
-        body.appendChild(notes);
-      }
+        if (task.notes) {
+          const notes = document.createElement("div");
+          notes.className = "task-notes";
+          notes.textContent = task.notes;
+          body.appendChild(notes);
+        }
 
-      const actions = document.createElement("div");
-      actions.className = "task-actions";
+        const actions = document.createElement("div");
+        actions.className = "task-actions";
 
-      const doneBtn = document.createElement("button");
-      doneBtn.type = "button";
-      doneBtn.className = "pill-btn";
-      doneBtn.textContent = task.done ? "✓ Done" : "Mark done";
-      doneBtn.addEventListener("click", () => {
-        task.done = !task.done;
-        saveTasks();
-        renderTasks(getActiveFilter());
+        const doneBtn = document.createElement("button");
+        doneBtn.type = "button";
+        doneBtn.className = "pill-btn";
+        doneBtn.textContent = task.done ? "✓ Done" : "Mark done";
+        doneBtn.addEventListener("click", () => {
+          task.done = !task.done;
+          saveTasks();
+          renderTasks(getActiveFilter());
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "pill-btn danger";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", () => {
+          tasks = tasks.filter((t) => t.id !== task.id);
+          saveTasks();
+          renderTasks(getActiveFilter());
+        });
+
+        actions.appendChild(doneBtn);
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(header);
+        card.appendChild(body);
+        card.appendChild(actions);
+
+        tasksContainer.appendChild(card);
       });
+  }
 
-      const editBtn = document.createElement("button");
-      editBtn.type = "button";
-      editBtn.className = "pill-btn ghost";
-      editBtn.textContent = "Edit";
-      editBtn.addEventListener("click", () => {
-        titleInput.value = task.title;
-        notesInput.value = task.notes || "";
-        const d = new Date(task.sourceDateISO);
-        dateInput.value = d.toISOString().slice(0, 10);
-        timeInput.value = d.toISOString().slice(11, 16);
-        tzMode = task.mode;
-        updateTzModeUI();
-      });
+  tzModeToggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-mode]");
+    if (!btn) return;
+    tzMode = btn.dataset.mode;
+    updateTzModeUI();
+  });
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "pill-btn danger";
-      deleteBtn.textContent = "Delete";
-      deleteBtn.addEventListener("click", () => {
-        tasks = tasks.filter((t) => t.id !== task.id);
-        saveTasks();
-        renderTasks(getActiveFilter());
-      });
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = titleInput.value.trim();
+    const notes = notesInput.value.trim();
+    const date = dateInput.value;
+    const time = timeInput.value;
 
-      actions.appendChild(doneBtn);
-      actions.appendChild(editBtn);
-      actions.appendChild(deleteBtn);
+    if (!date || !time) {
+      alert("Please choose date and time.");
+      return;
+    }
 
-      card.appendChild(header);
-      card.appendChild(body);
-      card.appendChild(actions);
-
-      tasksContainer.appendChild(card);
+    const task = createTask({
+      title,
+      notes,
+      baseDate: date,
+      baseTime: time,
+      mode: tzMode
     });
-}
 
-// ===========================
-// Calendar view (simple placeholder)
-// ===========================
-function renderCalendar() {
-  const calendar = document.getElementById("calendarGrid");
-  if (!calendar) return;
-  calendar.innerHTML = "Calendar view coming soon…";
-}
+    tasks.push(task);
+    saveTasks();
+    form.reset();
+    renderTasks(getActiveFilter());
+  });
 
-// ===========================
-// State persistence
-// ===========================
-function saveTasks() {
-  localStorage.setItem("ogPlannerTasks", JSON.stringify(tasks));
-}
+  filterButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      filterButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderTasks(btn.dataset.filter);
+    });
+  });
 
-function loadTasks() {
-  const raw = localStorage.getItem("ogPlannerTasks");
-  if (!raw) return;
-  try {
-    tasks = JSON.parse(raw);
-  } catch {
-    tasks = [];
-  }
-}
+  viewToggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-view]");
+    if (!btn) return;
+    if (btn.dataset.view === "list") {
+      listWrapper.style.display = "block";
+      calendarWrapper.style.display = "none";
+    } else {
+      listWrapper.style.display = "none";
+      calendarWrapper.style.display = "block";
+    }
+    viewToggle.querySelectorAll("button").forEach((b) => {
+      b.classList.toggle("active", b === btn);
+    });
+  });
 
-// ===========================
-// UI helpers
-// ===========================
-function updateTzModeUI() {
-  if (tzMode === "MN_PA") {
-    mnToPaBtn.classList.add("active");
-    paToMnBtn.classList.remove("active");
-  } else {
-    paToMnBtn.classList.add("active");
-    mnToPaBtn.classList.remove("active");
-  }
-}
-
-function getActiveFilter() {
-  const btn = document.querySelector("[data-filter].active");
-  return btn ? btn.dataset.filter : "all";
-}
-
-// ===========================
-// Event listeners
-// ===========================
-tzModeToggle.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-mode]");
-  if (!btn) return;
-  tzMode = btn.dataset.mode;
+  loadTasks();
   updateTzModeUI();
-});
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const title = titleInput.value.trim();
-  const notes = notesInput.value.trim();
-  const date = dateInput.value;
-  const time = timeInput.value;
-
-  if (!date || !time) {
-    alert("Please choose date and time.");
-    return;
-  }
-
-  const task = createTask({
-    title,
-    notes,
-    baseDate: date,
-    baseTime: time,
-    mode: tzMode
-  });
-
-  tasks.push(task);
-  saveTasks();
-  form.reset();
-  renderTasks(getActiveFilter());
-});
-
-filterButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    filterButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    renderTasks(btn.dataset.filter);
-  });
-});
-
-viewToggle.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-view]");
-  if (!btn) return;
-  if (btn.dataset.view === "list") {
-    listViewBtn.classList.add("active");
-    calendarViewBtn.classList.remove("active");
-    listWrapper.style.display = "block";
-    calendarWrapper.style.display = "none";
-  } else {
-    calendarViewBtn.classList.add("active");
-    listViewBtn.classList.remove("active");
-    listWrapper.style.display = "none";
-    calendarWrapper.style.display = "block";
-    renderCalendar();
-  }
-});
-
-// ===========================
-// Initial load
-// ===========================
-loadTasks();
-updateTzModeUI();
-renderTasks("all");
-</script>
+  renderTasks("all");
+  </script>
+</body>
+</html>
