@@ -5,7 +5,7 @@
   <title>OG Planner App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- PWA / icon холбоосууд -->
+  <!-- PWA / icons -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -483,7 +483,7 @@
 
   <script>
     const STORAGE_KEY = "og_planner_tasks_v1";
-    const DIFF_HOURS = 13;
+    const DIFF_HOURS = 13; // MN UTC+8, PA UTC-5, simplified
 
     function loadTasks() {
       try {
@@ -565,28 +565,10 @@
       return `mailto:?subject=${subj}&body=${body}`;
     }
 
-    function scheduleReminder(task) {
-      if (!("Notification" in window) || Notification.permission !== "granted") return;
-
-      const now = Date.now();
-      const mnTime = new Date(task.mnDate).getTime();
-      const diff = mnTime - now;
-
-      if (diff <= 0) return;
-
-      setTimeout(() => {
-        new Notification("OG Planner reminder", {
-          body: `${task.title} — MN: ${formatTime(new Date(task.mnDate))}`,
-          tag: task.id
-        });
-      }, diff);
-    }
-
     let tasks = loadTasks();
     let currentMode = "MN_TO_PA";
     let currentFilter = "all";
     let currentView = "list";
-    let editingTaskId = null;
 
     const modeSegment = document.getElementById("modeSegment");
     const filterSegment = document.getElementById("filterSegment");
@@ -647,37 +629,22 @@
         return;
       }
 
-      if (editingTaskId) {
-        const t = tasks.find((x) => x.id === editingTaskId);
-        if (t) {
-          t.title = title;
-          t.notes = notes;
-          t.mode = currentMode;
-          t.sourceDate = sourceDate.toISOString();
-          t.mnDate = both.mn.toISOString();
-          t.paDate = both.pa.toISOString();
-        }
-      } else {
-        const newTask = {
-          id: Date.now().toString(),
-          title,
-          notes,
-          mode: currentMode,
-          createdAt: new Date().toISOString(),
-          sourceDate: sourceDate.toISOString(),
-          mnDate: both.mn.toISOString(),
-          paDate: both.pa.toISOString(),
-          done: false,
-        };
-        tasks.push(newTask);
-        scheduleReminder(newTask);
-      }
+      const newTask = {
+        id: Date.now().toString(),
+        title,
+        notes,
+        mode: currentMode,
+        createdAt: new Date().toISOString(),
+        sourceDate: sourceDate.toISOString(),
+        mnDate: both.mn.toISOString(),
+        paDate: both.pa.toISOString(),
+        done: false,
+      };
 
+      tasks.push(newTask);
       saveTasks(tasks);
       renderTasks();
 
-      editingTaskId = null;
-      addTaskBtn.innerHTML = '<span class="plus">＋</span><span>Save task with both time zones</span>';
       titleInput.value = "";
       notesInput.value = "";
       timeInput.value = "";
@@ -695,23 +662,6 @@
       t.done = !t.done;
       saveTasks(tasks);
       renderTasks();
-    }
-
-    function startEditTask(task) {
-      editingTaskId = task.id;
-      titleInput.value = task.title;
-      notesInput.value = task.notes || "";
-
-      const src = new Date(task.sourceDate || task.mnDate);
-      dateInput.value = src.toISOString().slice(0, 10);
-      timeInput.value = src.toTimeString().slice(0, 5);
-
-      currentMode = task.mode;
-      [...modeSegment.querySelectorAll("button")].forEach((b) => {
-        b.classList.toggle("active", b.getAttribute("data-mode") === currentMode);
-      });
-
-      addTaskBtn.innerHTML = '<span class="plus">💾</span><span>Save changes</span>';
     }
 
     function matchesFilter(task) {
@@ -767,4 +717,101 @@
         task.mode === "MN_TO_PA" ? "MN → PA" : "PA → MN";
 
       titleRow.appendChild(titleEl);
-      title
+      titleRow.appendChild(modeBadge);
+
+      const timesEl = document.createElement("div");
+      timesEl.className = "task-times";
+      timesEl.innerHTML =
+        `MN: <strong>${formatDate(mn)}</strong> ${formatTime(mn)} · ` +
+        `PA: <strong>${formatDate(pa)}</strong> ${formatTime(pa)}`;
+
+      main.appendChild(titleRow);
+      main.appendChild(timesEl);
+
+      if (task.notes) {
+        const notesEl = document.createElement("div");
+        notesEl.className = "task-notes";
+        notesEl.textContent = task.notes;
+        main.appendChild(notesEl);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "task-actions";
+
+      const emailBtn = document.createElement("button");
+      emailBtn.className = "pill-btn pill-email";
+      emailBtn.innerHTML = '<span class="icon">✉️</span><span>Email</span>';
+      emailBtn.addEventListener("click", () => {
+        const link = buildMailto(task);
+        window.location.href = link;
+      });
+
+      const doneBtn = document.createElement("button");
+      doneBtn.className = "pill-btn pill-delete";
+      doneBtn.innerHTML = `<span class="icon">${
+        task.done ? "↺" : "✓"
+      }</span><span>${task.done ? "Undo" : "Done"}</span>`;
+      doneBtn.addEventListener("click", () => toggleDone(task.id));
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "pill-btn pill-delete";
+      deleteBtn.innerHTML = '<span class="icon">✕</span><span>Delete</span>';
+      deleteBtn.addEventListener("click", () => {
+        if (confirm("Delete this task?")) deleteTask(task.id);
+      });
+
+      actions.appendChild(emailBtn);
+      actions.appendChild(doneBtn);
+      actions.appendChild(deleteBtn);
+
+      card.appendChild(main);
+      card.appendChild(actions);
+      return card;
+    }
+
+    function renderTasks() {
+      const filtered = tasks.filter(matchesFilter);
+      tasksContainer.innerHTML = "";
+
+      if (filtered.length === 0) {
+        tasksContainer.innerHTML =
+          '<div class="hint-text" style="margin-top:8px;">No tasks yet. Add your first task above.</div>';
+        return;
+      }
+
+      if (currentView === "calendar") {
+        const groups = groupByDate(filtered);
+        groups.forEach((g) => {
+          const dateObj = new Date(g.tasks[0].mnDate);
+          const groupEl = document.createElement("div");
+          groupEl.className = "task-date-group";
+
+          const heading = document.createElement("div");
+          heading.className = "task-date-heading";
+          heading.textContent = formatDate(dateObj);
+          groupEl.appendChild(heading);
+
+          g.tasks.forEach((task) => {
+            groupEl.appendChild(buildTaskCard(task));
+          });
+
+          tasksContainer.appendChild(groupEl);
+        });
+      } else {
+        const sorted = [...filtered].sort(
+          (a, b) => new Date(a.mnDate) - new Date(b.mnDate)
+        );
+        sorted.forEach((task) => {
+          tasksContainer.appendChild(buildTaskCard(task));
+        });
+      }
+    }
+
+    (function init() {
+      const today = new Date();
+      dateInput.value = today.toISOString().slice(0, 10);
+      renderTasks();
+    })();
+  </script>
+</body>
+</html>

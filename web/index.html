@@ -1,222 +1,921 @@
 <!DOCTYPE html>
 <html lang="mn">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>OG Planner App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- PWA / icon холбоосууд (хэрэглэж байгаа бол файлуудаа бэлдээрэй) -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <meta name="theme-color" content="#e0f2fe">
 
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top left, #e0f2fe, #eef2ff 40%, #f9fafb 70%);
-      color: #111827;
+      padding: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, #e0f2fe, #f9fafb 40%, #e5e7eb 80%);
+      color: #1f2933;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 32px 12px 40px;
     }
 
-    .app {
-      max-width: 900px;
-      margin: auto;
-      padding: 24px;
-    }
-
-    h1 {
-      font-size: 32px;
-      margin-bottom: 4px;
-    }
-
-    .subtitle {
-      color: #6b7280;
-      margin-bottom: 24px;
+    .app-wrapper {
+      width: 100%;
+      max-width: 420px;
     }
 
     .card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 20px 18px 16px;
+      box-shadow:
+        0 10px 25px rgba(15, 23, 42, 0.08),
+        0 0 0 1px rgba(148, 163, 184, 0.16);
+      backdrop-filter: blur(10px);
     }
 
-    label {
-      display: block;
-      font-weight: 600;
-      margin-top: 12px;
+    .app-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
     }
 
-    input, select, textarea {
-      width: 100%;
-      margin-top: 6px;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #d1d5db;
-      font-size: 14px;
+    .app-badge-outer {
+      background: radial-gradient(circle at 20% 0%, #22c55e, #3b82f6);
+      padding: 3px;
+      border-radius: 24px;
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
     }
 
-    button {
-      margin-top: 16px;
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
+    .app-badge-inner {
+      background: #f9fafb;
+      border-radius: 22px;
+      padding: 14px 20px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .primary {
-      background: #4f46e5;
-      color: white;
-    }
-
-    .task {
-      border-top: 1px solid #e5e7eb;
-      padding-top: 14px;
-      margin-top: 14px;
-    }
-
-    .badge {
-      display: inline-block;
-      font-size: 12px;
-      background: #e5e7eb;
-      padding: 4px 8px;
+    .app-dot {
+      width: 12px;
+      height: 12px;
       border-radius: 999px;
-      margin-right: 6px;
+      background: radial-gradient(circle at 30% 0%, #22c55e, #16a34a);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
     }
 
-    .email-btn {
-      background: #f97316;
-      color: white;
+    .app-badge-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .app-badge-text span:first-child {
+      font-size: 12px;
+      font-weight: 600;
+      color: #16a34a;
+    }
+
+    .app-badge-text span:last-child {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .app-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 6px;
+    }
+
+    .app-subtitle {
+      font-size: 13px;
+      color: #4b5563;
+      margin-bottom: 14px;
+      max-width: 280px;
+    }
+
+    .segment-row {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .segment {
+      display: inline-flex;
+      padding: 4px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
+      gap: 4px;
+    }
+
+    .segment button {
+      border: none;
+      padding: 6px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #6b7280;
+      transition: all 0.16s ease-out;
+    }
+
+    .segment button.active {
+      background: linear-gradient(135deg, #22c55e, #3b82f6);
+      color: #ffffff;
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+    }
+
+    .field-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
       margin-top: 10px;
     }
 
-    footer {
-      text-align: center;
+    .field-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .input, textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border-radius: 11px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: #f9fafb;
+      color: #111827;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input::placeholder,
+    textarea::placeholder {
+      color: #9ca3af;
+    }
+
+    .input:focus,
+    textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+      background: #ffffff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+      max-height: 140px;
+    }
+
+    .hint-text {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .primary-btn {
+      margin-top: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #ffffff;
+      background: linear-gradient(135deg, #22c55e, #3b82f6);
+      box-shadow:
+        0 10px 25px rgba(59, 130, 246, 0.35),
+        0 0 0 1px rgba(15, 23, 42, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .primary-btn span.plus {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .section-title {
+      margin: 16px 0 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .view-toggle {
+      display: inline-flex;
+      border-radius: 999px;
+      background: #f3f4f6;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      overflow: hidden;
+    }
+
+    .view-toggle button {
+      border: none;
+      padding: 4px 14px;
+      font-size: 12px;
       color: #6b7280;
-      margin-top: 24px;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .view-toggle button.active {
+      background: rgba(255, 255, 255, 0.9);
+      color: #111827;
+    }
+
+    .tasks-container {
+      margin-top: 10px;
+    }
+
+    .task-date-group {
+      margin-bottom: 10px;
+    }
+
+    .task-date-heading {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #9ca3af;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .task-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 9px 11px 8px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      margin-bottom: 7px;
+      display: grid;
+      grid-template-columns: auto 80px;
+      gap: 4px 10px;
+      align-items: center;
+    }
+
+    .task-main {
+      min-width: 0;
+    }
+
+    .task-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .task-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge-soft {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.08);
+      color: #1d4ed8;
+      border: 1px solid rgba(59, 130, 246, 0.5);
+    }
+
+    .badge-soft.mn {
+      background: rgba(34, 197, 94, 0.1);
+      color: #15803d;
+      border-color: rgba(34, 197, 94, 0.55);
+    }
+
+    .task-times {
+      font-size: 11px;
+      color: #4b5563;
+      margin-top: 1px;
+    }
+
+    .task-times strong {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .task-notes {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .task-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .pill-btn {
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f9fafb;
+      color: #374151;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+    }
+
+    .pill-email {
+      background: rgba(59, 130, 246, 0.1);
+      color: #1d4ed8;
+      border: 1px solid rgba(59, 130, 246, 0.6);
+    }
+
+    .pill-delete {
+      background: #f9fafb;
+      color: #4b5563;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+    }
+
+    .pill-email span.icon {
       font-size: 13px;
+    }
+
+    .pill-delete span.icon {
+      font-size: 14px;
+      line-height: 0;
+    }
+
+    .footer-card {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #4b5563;
+      text-align: left;
+      padding: 0 3px;
+    }
+
+    .footer-quote {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .brand-line {
+      font-size: 11px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 400px) {
+      .card {
+        padding: 18px 16px 14px;
+      }
+
+      .app-title {
+        font-size: 24px;
+      }
     }
   </style>
 </head>
-
 <body>
-<div class="app">
-
-  <h1>OG Planner App</h1>
-  <div class="subtitle">
-    Mongolia & Pennsylvania цагийг зэрэг харуулдаг ухаалаг төлөвлөгөө.
-  </div>
-
-  <div class="card">
-    <label>Гарчиг</label>
-    <input id="title" placeholder="Жишээ: Шүүх хурал бэлтгэх">
-
-    <label>Огноо</label>
-    <input type="date" id="date">
-
-    <label>Цаг</label>
-    <input type="time" id="time">
-
-    <label>Цагийн бүс</label>
-    <select id="zone">
-      <option value="MN">Монгол (UTC+8)</option>
-      <option value="US">Pennsylvania State College (UTC-5)</option>
-    </select>
-
-    <label>Тайлбар (сонголтоор)</label>
-    <textarea id="note"></textarea>
-
-    <button class="primary" onclick="addTask()">Нэмэх</button>
-  </div>
-
-  <div class="card" id="tasks"></div>
-
-  <footer>
-    OG Planner App – хоёр орны цагийг нэг дор.
-  </footer>
-
-</div>
-
-<script>
-const tasks = [];
-
-function addTask() {
-  const title = document.getElementById("title").value;
-  const date = document.getElementById("date").value;
-  const time = document.getElementById("time").value;
-  const zone = document.getElementById("zone").value;
-  const note = document.getElementById("note").value;
-
-  if (!title || !date || !time) {
-    alert("Гарчиг, огноо, цаг оруулна уу");
-    return;
-  }
-
-  const base = new Date(`${date}T${time}:00`);
-
-  let mn = new Date(base);
-  let us = new Date(base);
-
-  if (zone === "MN") us.setHours(us.getHours() - 13);
-  if (zone === "US") mn.setHours(mn.getHours() + 13);
-
-  tasks.push({
-    title,
-    note,
-    mnDate: mn.toISOString().slice(0,10),
-    mnTime: mn.toTimeString().slice(0,5),
-    usDate: us.toISOString().slice(0,10),
-    usTime: us.toTimeString().slice(0,5)
-  });
-
-  render();
-}
-
-function sendEmail(task) {
-  const subject = encodeURIComponent("OG Planner App – Төлөвлөгөө");
-
-  const body = encodeURIComponent(
-`OG Planner App
-
-Төлөвлөгөө: ${task.title}
-
-Монголын цаг:
-📅 ${task.mnDate}
-⏰ ${task.mnTime}
-
-Pennsylvania State College:
-📅 ${task.usDate}
-⏰ ${task.usTime}
-
-Тайлбар:
-${task.note || "-"}
-
-—
-Best regards
-OTGONDORJ Luvsandagva
-
-“Waiting for the perfect time usually means never starting.”`
-  );
-
-  window.location.href = `mailto:?subject=${subject}&body=${body}`;
-}
-
-function render() {
-  const el = document.getElementById("tasks");
-  el.innerHTML = "";
-
-  tasks.forEach(t => {
-    el.innerHTML += `
-      <div class="task">
-        <strong>${t.title}</strong><br>
-        <span class="badge">Монгол ${t.mnDate} ${t.mnTime}</span>
-        <span class="badge">Pennsylvania ${t.usDate} ${t.usTime}</span>
-        <br>
-        <button class="email-btn" onclick='sendEmail(${JSON.stringify(t)})'>
-          Имэйл илгээх
-        </button>
+  <div class="app-wrapper">
+    <div class="card">
+      <!-- Header -->
+      <div class="app-badge-row">
+        <div class="app-badge-outer">
+          <div class="app-badge-inner">
+            <div class="app-dot"></div>
+            <div class="app-badge-text">
+              <span>OG</span>
+              <span>planner app</span>
+            </div>
+          </div>
+        </div>
       </div>
-    `;
-  });
-}
-</script>
 
+      <h1 class="app-title">Today’s focus</h1>
+      <p class="app-subtitle">
+        Plan once, see both time zones. Mongolia &amp; Pennsylvania side-by-side.
+      </p>
+
+      <!-- Notifications -->
+      <button id="enableNotifBtn" class="primary-btn" style="margin-top:0;margin-bottom:10px;">
+        <span class="plus">🔔</span>
+        <span>Enable reminders</span>
+      </button>
+
+      <!-- Time zone mode -->
+      <div class="field-label">Time zone mode</div>
+      <div class="segment-row">
+        <div class="segment" id="modeSegment">
+          <button type="button" data-mode="MN_TO_PA" class="active">MN → PA</button>
+          <button type="button" data-mode="PA_TO_MN">PA → MN</button>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="field-label">Title</div>
+      <input id="titleInput" class="input" placeholder="Write your main task…" />
+
+      <div class="field-row">
+        <div style="flex: 1;">
+          <div class="field-label">Date</div>
+          <input id="dateInput" class="input" type="date" />
+        </div>
+        <div style="flex: 1;">
+          <div class="field-label">Time</div>
+          <input id="timeInput" class="input" type="time" />
+        </div>
+      </div>
+      <div class="hint-text">We’ll convert and store both MN &amp; PA times automatically.</div>
+
+      <div class="field-label">Notes (optional)</div>
+      <textarea id="notesInput"
+        placeholder="Details, links, or context…"></textarea>
+
+      <button id="addTaskBtn" class="primary-btn">
+        <span class="plus">＋</span>
+        <span>Save task with both time zones</span>
+      </button>
+
+      <!-- View / filters -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;">
+        <div>
+          <div class="field-label" style="margin-top:0;">Filter</div>
+          <div class="segment-row" style="justify-content:flex-start;margin-bottom:0;">
+            <div class="segment" id="filterSegment">
+              <button type="button" data-filter="all" class="active">All</button>
+              <button type="button" data-filter="today">Today</button>
+              <button type="button" data-filter="upcoming">Upcoming</button>
+              <button type="button" data-filter="done">Done</button>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="field-label" style="margin-top:0;">View</div>
+          <div class="view-toggle" id="viewToggle">
+            <button type="button" data-view="list" class="active">List</button>
+            <button type="button" data-view="calendar">Calendar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks -->
+      <div id="tasksContainer" class="tasks-container"></div>
+
+      <!-- Footer -->
+      <div class="footer-card">
+        Best regards,<br />
+        <strong>OTGONDORJ Luvsandagva</strong>
+        <p class="footer-quote">
+          “Waiting for the ‘perfect time’ usually means never starting.”
+        </p>
+      </div>
+    </div>
+
+    <div class="brand-line">
+      OG Planner App — web &amp; mobile, two time zones in one place.
+    </div>
+  </div>
+
+  <script>
+    // --------- Helpers ---------
+    const STORAGE_KEY = "og_planner_tasks_v1";
+    // Fixed 13h difference (MN UTC+8, PA UTC-5), DST тооцоогүй хувилбар
+    const DIFF_HOURS = 13;
+
+    function loadTasks() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error("Failed to load tasks", e);
+        return [];
+      }
+    }
+
+    function saveTasks(tasks) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    function parseDateTime(dateStr, timeStr) {
+      if (!dateStr || !timeStr) return null;
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const [hh, mm] = timeStr.split(":").map(Number);
+      return new Date(y, m - 1, d, hh, mm);
+    }
+
+    function formatDate(d) {
+      return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    function formatTime(d) {
+      return d.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    function computeBothTimes(sourceDate, mode) {
+      if (!sourceDate) return null;
+      let mn, pa;
+      if (mode === "MN_TO_PA") {
+        mn = sourceDate;
+        pa = new Date(mn.getTime() - DIFF_HOURS * 60 * 60 * 1000);
+      } else {
+        pa = sourceDate;
+        mn = new Date(pa.getTime() + DIFF_HOURS * 60 * 60 * 1000);
+      }
+      return { mn, pa };
+    }
+
+    function buildMailto(task) {
+      const mn = new Date(task.mnDate);
+      const pa = new Date(task.paDate);
+
+      const subject = `Plan: ${task.title}`;
+
+      const lines = [];
+      lines.push(`Title: ${task.title}`);
+      lines.push("");
+      lines.push(
+        `Mongolia time:    ${formatDate(mn)}  ${formatTime(mn)} (UTC+8)`
+      );
+      lines.push(
+        `Pennsylvania time: ${formatDate(pa)}  ${formatTime(pa)} (UTC-5)`
+      );
+      lines.push("");
+      if (task.notes) {
+        lines.push("Notes:");
+        lines.push(task.notes);
+        lines.push("");
+      }
+      lines.push("Best regards,");
+      lines.push("OTGONDORJ Luvsandagva");
+      lines.push(
+        '“Waiting for the ‘perfect time’ usually means never starting.”'
+      );
+
+      const body = encodeURIComponent(lines.join("\n"));
+      const subj = encodeURIComponent(subject);
+      return `mailto:?subject=${subj}&body=${body}`;
+    }
+
+    // --------- Notifications (simple, tab open байх үед) ---------
+    function scheduleReminder(task) {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+      const now = Date.now();
+      const mnTime = new Date(task.mnDate).getTime();
+      const diff = mnTime - now;
+
+      if (diff <= 0) return;
+
+      setTimeout(() => {
+        new Notification("OG Planner reminder", {
+          body: `${task.title} — MN: ${formatTime(new Date(task.mnDate))}`,
+          tag: task.id
+        });
+      }, diff);
+    }
+
+    // --------- State ---------
+    let tasks = loadTasks();
+    let currentMode = "MN_TO_PA";
+    let currentFilter = "all";
+    let currentView = "list";
+    let editingTaskId = null;
+
+    // --------- DOM refs ---------
+    const modeSegment = document.getElementById("modeSegment");
+    const filterSegment = document.getElementById("filterSegment");
+    const viewToggle = document.getElementById("viewToggle");
+    const titleInput = document.getElementById("titleInput");
+    const dateInput = document.getElementById("dateInput");
+    const timeInput = document.getElementById("timeInput");
+    const notesInput = document.getElementById("notesInput");
+    const addTaskBtn = document.getElementById("addTaskBtn");
+    const tasksContainer = document.getElementById("tasksContainer");
+    const enableNotifBtn = document.getElementById("enableNotifBtn");
+
+    // --------- Event wiring ---------
+    modeSegment.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-mode]");
+      if (!btn) return;
+      const mode = btn.getAttribute("data-mode");
+      currentMode = mode;
+
+      [...modeSegment.querySelectorAll("button")].forEach((b) =>
+        b.classList.toggle("active", b === btn)
+      );
+    });
+
+    filterSegment.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-filter]");
+      if (!btn) return;
+      currentFilter = btn.getAttribute("data-filter");
+      [...filterSegment.querySelectorAll("button")].forEach((b) =>
+        b.classList.toggle("active", b === btn)
+      );
+      renderTasks();
+    });
+
+    viewToggle.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-view]");
+      if (!btn) return;
+      currentView = btn.getAttribute("data-view");
+      [...viewToggle.querySelectorAll("button")].forEach((b) =>
+        b.classList.toggle("active", b === btn)
+      );
+      renderTasks();
+    });
+
+    enableNotifBtn.addEventListener("click", async () => {
+      if (!("Notification" in window)) {
+        alert("Notifications are not supported in this browser.");
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        alert("You denied notifications.");
+        return;
+      }
+      alert("Reminders enabled. We'll show a notification at task time while this tab is open.");
+      // одооноос нэмэх tasks дээр scheduleReminder ажиллана
+      tasks.forEach(scheduleReminder);
+    });
+
+    addTaskBtn.addEventListener("click", () => {
+      const title = titleInput.value.trim();
+      const dateStr = dateInput.value;
+      const timeStr = timeInput.value;
+      const notes = notesInput.value.trim();
+
+      if (!title || !dateStr || !timeStr) {
+        alert("Please fill title, date and time.");
+        return;
+      }
+
+      const sourceDate = parseDateTime(dateStr, timeStr);
+      const both = computeBothTimes(sourceDate, currentMode);
+      if (!both) {
+        alert("Time conversion error.");
+        return;
+      }
+
+      if (editingTaskId) {
+        const t = tasks.find((x) => x.id === editingTaskId);
+        if (t) {
+          t.title = title;
+          t.notes = notes;
+          t.mode = currentMode;
+          t.sourceDate = sourceDate.toISOString();
+          t.mnDate = both.mn.toISOString();
+          t.paDate = both.pa.toISOString();
+        }
+      } else {
+        const newTask = {
+          id: Date.now().toString(),
+          title,
+          notes,
+          mode: currentMode,
+          createdAt: new Date().toISOString(),
+          sourceDate: sourceDate.toISOString(),
+          mnDate: both.mn.toISOString(),
+          paDate: both.pa.toISOString(),
+          done: false,
+        };
+        tasks.push(newTask);
+        scheduleReminder(newTask);
+      }
+
+      saveTasks(tasks);
+      renderTasks();
+
+      editingTaskId = null;
+      addTaskBtn.innerHTML = '<span class="plus">＋</span><span>Save task with both time zones</span>';
+      titleInput.value = "";
+      notesInput.value = "";
+      timeInput.value = "";
+      // dateInput‑ийг үлдээж болно
+    });
+
+    function deleteTask(id) {
+      tasks = tasks.filter((t) => t.id !== id);
+      saveTasks(tasks);
+      renderTasks();
+    }
+
+    function toggleDone(id) {
+      const t = tasks.find((x) => x.id === id);
+      if (!t) return;
+      t.done = !t.done;
+      saveTasks(tasks);
+      renderTasks();
+    }
+
+    function startEditTask(task) {
+      editingTaskId = task.id;
+      titleInput.value = task.title;
+      notesInput.value = task.notes || "";
+
+      const src = new Date(task.sourceDate || task.mnDate);
+      dateInput.value = src.toISOString().slice(0, 10);
+      timeInput.value = src.toTimeString().slice(0, 5);
+
+      currentMode = task.mode;
+      [...modeSegment.querySelectorAll("button")].forEach((b) => {
+        b.classList.toggle("active", b.getAttribute("data-mode") === currentMode);
+      });
+
+      addTaskBtn.innerHTML = '<span class="plus">💾</span><span>Save changes</span>';
+    }
+
+    function matchesFilter(task) {
+      if (currentFilter === "all") return true;
+      const today = new Date();
+      const mn = new Date(task.mnDate);
+
+      const isSameDay =
+        mn.getFullYear() === today.getFullYear() &&
+        mn.getMonth() === today.getMonth() &&
+        mn.getDate() === today.getDate();
+
+      if (currentFilter === "today") return isSameDay;
+      if (currentFilter === "upcoming") return !task.done && mn > today;
+      if (currentFilter === "done") return !!task.done;
+      return true;
+    }
+
+    function groupByDate(filteredTasks) {
+      const groups = {};
+      filteredTasks.forEach((t) => {
+        const d = new Date(t.mnDate);
+        const key = d.toISOString().slice(0, 10);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(t);
+      });
+
+      const sorted = Object.keys(groups).sort();
+      return sorted.map((k) => ({ key: k, tasks: groups[k] }));
+    }
+
+    function buildTaskCard(task) {
+      const mn = new Date(task.mnDate);
+      const pa = new Date(task.paDate);
+
+      const card = document.createElement("div");
+      card.className = "task-card";
+
+      const main = document.createElement("div");
+      main.className = "task-main";
+
+      const titleRow = document.createElement("div");
+      titleRow.className = "task-title-row";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "task-title";
+      titleEl.textContent = task.title;
+
+      const modeBadge = document.createElement("div");
+      modeBadge.className =
+        "badge-soft " + (task.mode === "MN_TO_PA" ? "mn" : "");
+      modeBadge.textContent =
+        task.mode === "MN_TO_PA" ? "MN → PA" : "PA → MN";
+
+      titleRow.appendChild(titleEl);
+      titleRow.appendChild(modeBadge);
+
+      const timesEl = document.createElement("div");
+      timesEl.className = "task-times";
+      timesEl.innerHTML =
+        `MN: <strong>${formatDate(mn)}</strong> ${formatTime(mn)} · ` +
+        `PA: <strong>${formatDate(pa)}</strong> ${formatTime(pa)}`;
+
+      main.appendChild(titleRow);
+      main.appendChild(timesEl);
+
+      if (task.notes) {
+        const notesEl = document.createElement("div");
+        notesEl.className = "task-notes";
+        notesEl.textContent = task.notes;
+        main.appendChild(notesEl);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "task-actions";
+
+      const emailBtn = document.createElement("button");
+      emailBtn.className = "pill-btn pill-email";
+      emailBtn.innerHTML = '<span class="icon">✉️</span><span>Email</span>';
+      emailBtn.addEventListener("click", () => {
+        const link = buildMailto(task);
+        window.location.href = link;
+      });
+
+      const doneBtn = document.createElement("button");
+      doneBtn.className = "pill-btn pill-delete";
+      doneBtn.innerHTML = `<span class="icon">${
+        task.done ? "↺" : "✓"
+      }</span><span>${task.done ? "Undo" : "Done"}</span>`;
+      doneBtn.addEventListener("click", () => toggleDone(task.id));
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "pill-btn pill-delete";
+      editBtn.innerHTML = '<span class="icon">✎</span><span>Edit</span>';
+      editBtn.addEventListener("click", () => startEditTask(task));
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "pill-btn pill-delete";
+      deleteBtn.innerHTML = '<span class="icon">✕</span><span>Delete</span>';
+      deleteBtn.addEventListener("click", () => {
+        if (confirm("Delete this task?")) deleteTask(task.id);
+      });
+
+      actions.appendChild(emailBtn);
+      actions.appendChild(doneBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      card.appendChild(main);
+      card.appendChild(actions);
+      return card;
+    }
+
+    function renderTasks() {
+      const filtered = tasks.filter(matchesFilter);
+      tasksContainer.innerHTML = "";
+
+      if (filtered.length === 0) {
+        tasksContainer.innerHTML =
+          '<div class="hint-text" style="margin-top:8px;">No tasks yet. Add your first task above.</div>';
+        return;
+      }
+
+      if (currentView === "calendar") {
+        const groups = groupByDate(filtered);
+        groups.forEach((g) => {
+          const dateObj = new Date(g.tasks[0].mnDate);
+          const groupEl = document.createElement("div");
+          groupEl.className = "task-date-group";
+
+          const heading = document.createElement("div");
+          heading.className = "task-date-heading";
+          heading.textContent = formatDate(dateObj);
+          groupEl.appendChild(heading);
+
+          g.tasks.forEach((task) => {
+            groupEl.appendChild(buildTaskCard(task));
+          });
+
+          tasksContainer.appendChild(groupEl);
+        });
+      } else {
+        const sorted = [...filtered].sort(
+          (a, b) => new Date(a.mnDate) - new Date(b.mnDate)
+        );
+        sorted.forEach((task) => {
+          tasksContainer.appendChild(buildTaskCard(task));
+        });
+      }
+    }
+
+    // --------- Init ---------
+    (function init() {
+      const today = new Date();
+      dateInput.value = today.toISOString().slice(0, 10);
+      renderTasks();
+      // Permission grant хийсэн байсан бол хуучин tasks‑д reminder дахин холбоно
+      if ("Notification" in window && Notification.permission === "granted") {
+        tasks.forEach(scheduleReminder);
+      }
+    })();
+  </script>
 </body>
 </html>
