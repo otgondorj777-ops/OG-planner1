@@ -260,7 +260,7 @@
       border: 1px solid rgba(209, 213, 219, 0.9);
       margin-bottom: 7px;
       display: grid;
-      grid-template-columns: auto 80px;
+      grid-template-columns: auto 90px;
       gap: 4px 10px;
       align-items: center;
     }
@@ -350,13 +350,10 @@
       border: 1px solid rgba(209, 213, 219, 0.9);
     }
 
-    .pill-email span.icon {
-      font-size: 13px;
-    }
-
+    .pill-email span.icon,
     .pill-delete span.icon {
-      font-size: 14px;
-      line-height: 0;
+      font-size: 13px;
+      line-height: 1;
     }
 
     .footer-card {
@@ -411,6 +408,12 @@
       <p class="app-subtitle">
         Plan once, see both time zones. Mongolia &amp; Pennsylvania side-by-side.
       </p>
+
+      <!-- Simple reminder enable -->
+      <button id="enableNotifBtn" class="primary-btn" style="margin-top:0;margin-bottom:10px;">
+        <span class="plus">🔔</span>
+        <span>Enable reminders (tab open)</span>
+      </button>
 
       <div class="field-label">Time zone mode</div>
       <div class="segment-row">
@@ -482,8 +485,8 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "og_planner_tasks_v1";
-    const DIFF_HOURS = 13; // MN UTC+8, PA UTC-5, simplified
+    const STORAGE_KEY = "og_planner_tasks_v2";
+    const DIFF_HOURS = 13; // MN UTC+8, PA UTC-5 (DST тооцоогүй)
 
     function loadTasks() {
       try {
@@ -565,10 +568,27 @@
       return `mailto:?subject=${subj}&body=${body}`;
     }
 
+    // simple reminder while tab open
+    function scheduleReminder(task) {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      const now = Date.now();
+      const mnTime = new Date(task.mnDate).getTime();
+      const diff = mnTime - now;
+      if (diff <= 0) return;
+
+      setTimeout(() => {
+        new Notification("OG Planner reminder", {
+          body: `${task.title} — MN: ${formatTime(new Date(task.mnDate))}`,
+          tag: task.id
+        });
+      }, diff);
+    }
+
     let tasks = loadTasks();
     let currentMode = "MN_TO_PA";
     let currentFilter = "all";
     let currentView = "list";
+    let editingTaskId = null;
 
     const modeSegment = document.getElementById("modeSegment");
     const filterSegment = document.getElementById("filterSegment");
@@ -579,13 +599,12 @@
     const notesInput = document.getElementById("notesInput");
     const addTaskBtn = document.getElementById("addTaskBtn");
     const tasksContainer = document.getElementById("tasksContainer");
+    const enableNotifBtn = document.getElementById("enableNotifBtn");
 
     modeSegment.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-mode]");
       if (!btn) return;
-      const mode = btn.getAttribute("data-mode");
-      currentMode = mode;
-
+      currentMode = btn.getAttribute("data-mode");
       [...modeSegment.querySelectorAll("button")].forEach((b) =>
         b.classList.toggle("active", b === btn)
       );
@@ -611,6 +630,20 @@
       renderTasks();
     });
 
+    enableNotifBtn.addEventListener("click", async () => {
+      if (!("Notification" in window)) {
+        alert("Notifications are not supported in this browser.");
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        alert("You denied notifications.");
+        return;
+      }
+      alert("Reminders enabled (tab open үед). New task бүр дээр notification schedule хийнэ.");
+      tasks.forEach(scheduleReminder);
+    });
+
     addTaskBtn.addEventListener("click", () => {
       const title = titleInput.value.trim();
       const dateStr = dateInput.value;
@@ -629,22 +662,37 @@
         return;
       }
 
-      const newTask = {
-        id: Date.now().toString(),
-        title,
-        notes,
-        mode: currentMode,
-        createdAt: new Date().toISOString(),
-        sourceDate: sourceDate.toISOString(),
-        mnDate: both.mn.toISOString(),
-        paDate: both.pa.toISOString(),
-        done: false,
-      };
+      if (editingTaskId) {
+        const t = tasks.find((x) => x.id === editingTaskId);
+        if (t) {
+          t.title = title;
+          t.notes = notes;
+          t.mode = currentMode;
+          t.sourceDate = sourceDate.toISOString();
+          t.mnDate = both.mn.toISOString();
+          t.paDate = both.pa.toISOString();
+        }
+      } else {
+        const newTask = {
+          id: Date.now().toString(),
+          title,
+          notes,
+          mode: currentMode,
+          createdAt: new Date().toISOString(),
+          sourceDate: sourceDate.toISOString(),
+          mnDate: both.mn.toISOString(),
+          paDate: both.pa.toISOString(),
+          done: false,
+        };
+        tasks.push(newTask);
+        scheduleReminder(newTask);
+      }
 
-      tasks.push(newTask);
       saveTasks(tasks);
       renderTasks();
 
+      editingTaskId = null;
+      addTaskBtn.innerHTML = '<span class="plus">＋</span><span>Save task with both time zones</span>';
       titleInput.value = "";
       notesInput.value = "";
       timeInput.value = "";
@@ -664,16 +712,28 @@
       renderTasks();
     }
 
+    function startEditTask(task) {
+      editingTaskId = task.id;
+      titleInput.value = task.title;
+      notesInput.value = task.notes || "";
+      const src = new Date(task.sourceDate || task.mnDate);
+      dateInput.value = src.toISOString().slice(0, 10);
+      timeInput.value = src.toTimeString().slice(0, 5);
+      currentMode = task.mode;
+      [...modeSegment.querySelectorAll("button")].forEach((b) =>
+        b.classList.toggle("active", b.getAttribute("data-mode") === currentMode)
+      );
+      addTaskBtn.innerHTML = '<span class="plus">💾</span><span>Save changes</span>';
+    }
+
     function matchesFilter(task) {
       if (currentFilter === "all") return true;
       const today = new Date();
       const mn = new Date(task.mnDate);
-
       const isSameDay =
         mn.getFullYear() === today.getFullYear() &&
         mn.getMonth() === today.getMonth() &&
         mn.getDate() === today.getDate();
-
       if (currentFilter === "today") return isSameDay;
       if (currentFilter === "upcoming") return !task.done && mn > today;
       if (currentFilter === "done") return !!task.done;
@@ -688,7 +748,6 @@
         if (!groups[key]) groups[key] = [];
         groups[key].push(t);
       });
-
       const sorted = Object.keys(groups).sort();
       return sorted.map((k) => ({ key: k, tasks: groups[k] }));
     }
@@ -753,6 +812,11 @@
       }</span><span>${task.done ? "Undo" : "Done"}</span>`;
       doneBtn.addEventListener("click", () => toggleDone(task.id));
 
+      const editBtn = document.createElement("button");
+      editBtn.className = "pill-btn pill-delete";
+      editBtn.innerHTML = '<span class="icon">✎</span><span>Edit</span>';
+      editBtn.addEventListener("click", () => startEditTask(task));
+
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "pill-btn pill-delete";
       deleteBtn.innerHTML = '<span class="icon">✕</span><span>Delete</span>';
@@ -762,6 +826,7 @@
 
       actions.appendChild(emailBtn);
       actions.appendChild(doneBtn);
+      actions.appendChild(editBtn);
       actions.appendChild(deleteBtn);
 
       card.appendChild(main);
@@ -788,12 +853,14 @@
 
           const heading = document.createElement("div");
           heading.className = "task-date-heading";
-          heading.textContent = formatDate(dateObj);
+          heading.textContent = formatDate(dateObj).toUpperCase();
           groupEl.appendChild(heading);
 
-          g.tasks.forEach((task) => {
-            groupEl.appendChild(buildTaskCard(task));
-          });
+          g.tasks
+            .sort((a, b) => new Date(a.mnDate) - new Date(b.mnDate))
+            .forEach((task) => {
+              groupEl.appendChild(buildTaskCard(task));
+            });
 
           tasksContainer.appendChild(groupEl);
         });
@@ -811,6 +878,9 @@
       const today = new Date();
       dateInput.value = today.toISOString().slice(0, 10);
       renderTasks();
+      if ("Notification" in window && Notification.permission === "granted") {
+        tasks.forEach(scheduleReminder);
+      }
     })();
   </script>
 </body>
